@@ -13,6 +13,7 @@ let isInteracting = false, isResizing = false;
 let startX, startY, initialLeft, initialTop, initialWidth, initialHeight;
 let activeElement = null;
 let history = [], historyIndex = -1, isRestoring = false;
+const emptyState = document.getElementById('empty-state');
 
 // Sign Out
 document.getElementById('btn-signout').addEventListener('click', () => window.location.href = 'login.html');
@@ -28,12 +29,12 @@ function saveState() {
   if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
   history.push(html); historyIndex++;
   localStorage.setItem('builderState', html);
-  updateLayers();
+  updateLayers(); updateEmptyState();
 }
 function restoreState(html) {
   isRestoring = true; canvas.innerHTML = html;
   selectedElement = null; activeElement = null;
-  updateFloatingToolbar(); updatePropertiesPanel(); updateLayers();
+  updateFloatingToolbar(); updatePropertiesPanel(); updateLayers(); updateEmptyState();
   isRestoring = false;
 }
 document.getElementById('btn-undo').addEventListener('click', () => { if (historyIndex > 0) { historyIndex--; restoreState(history[historyIndex]); } });
@@ -41,6 +42,12 @@ document.getElementById('btn-redo').addEventListener('click', () => { if (histor
 
 // ========== TOAST ==========
 function showToast(m) { toast.textContent = m; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
+
+// ========== EMPTY STATE ==========
+function updateEmptyState() {
+  const hasElements = canvas.querySelectorAll('.element').length > 0;
+  if (emptyState) emptyState.classList.toggle('hidden', hasElements);
+}
 
 // ========== LAYERS ==========
 function updateLayers() {
@@ -68,14 +75,34 @@ draggables.forEach(d => {
   d.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', d.dataset.type); setTimeout(() => d.style.opacity = '0.4', 0); });
   d.addEventListener('dragend', () => { d.style.opacity = '1'; canvas.classList.remove('drag-over'); });
 });
-canvas.addEventListener('dragover', e => { e.preventDefault(); canvas.classList.add('drag-over'); });
-canvas.addEventListener('dragleave', () => canvas.classList.remove('drag-over'));
+canvas.addEventListener('dragover', e => {
+  e.preventDefault(); canvas.classList.add('drag-over');
+  // Highlight section/container drop targets
+  const target = e.target.closest('.el-section, .el-container');
+  document.querySelectorAll('.drop-target').forEach(d => d.classList.remove('drop-target'));
+  if (target && canvas.contains(target)) target.classList.add('drop-target');
+});
+canvas.addEventListener('dragleave', e => {
+  canvas.classList.remove('drag-over');
+  document.querySelectorAll('.drop-target').forEach(d => d.classList.remove('drop-target'));
+});
 canvas.addEventListener('drop', e => {
   e.preventDefault(); canvas.classList.remove('drag-over');
+  document.querySelectorAll('.drop-target').forEach(d => d.classList.remove('drop-target'));
   const type = e.dataTransfer.getData('text/plain');
   if (!type || isInteracting) return;
-  const r = canvas.getBoundingClientRect();
-  createElementOnCanvas(type, Math.round((e.clientX - r.left) / SNAP) * SNAP, Math.round((e.clientY - r.top) / SNAP) * SNAP);
+
+  // Check if dropping onto a section or container
+  const dropTarget = e.target.closest('.el-section, .el-container');
+  if (dropTarget && canvas.contains(dropTarget) && type !== 'section' && type !== 'container') {
+    const r = dropTarget.getBoundingClientRect();
+    const x = Math.round((e.clientX - r.left) / SNAP) * SNAP;
+    const y = Math.round((e.clientY - r.top) / SNAP) * SNAP;
+    createElementInParent(type, x, y, dropTarget);
+  } else {
+    const r = canvas.getBoundingClientRect();
+    createElementOnCanvas(type, Math.round((e.clientX - r.left) / SNAP) * SNAP, Math.round((e.clientY - r.top) / SNAP) * SNAP);
+  }
   saveState();
 });
 
@@ -124,6 +151,32 @@ function createElementOnCanvas(type, x, y) {
   el.appendChild(handle); canvas.appendChild(el); selectElement(el);
 }
 
+// Create element inside a parent section/container
+function createElementInParent(type, x, y, parent) {
+  const el = document.createElement('div');
+  el.classList.add('element');
+  el.style.left = `${x}px`; el.style.top = `${y}px`;
+
+  if (type === 'text') {
+    const t = document.createElement('div'); t.classList.add('text-content'); t.contentEditable = 'false'; t.innerText = 'Edit this text'; el.appendChild(t);
+  } else if (type === 'button') {
+    const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!'); el.appendChild(b);
+  } else if (type === 'image') {
+    const img = document.createElement('img'); img.src = 'https://picsum.photos/200/150';
+    el.style.width = '160px'; el.style.height = '120px'; el.appendChild(img);
+  } else if (type === 'form') {
+    el.style.width = '200px'; el.style.height = '120px';
+    const f = document.createElement('form'); f.onsubmit = e => e.preventDefault();
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Email...';
+    inp.addEventListener('mousedown', e => e.stopPropagation());
+    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Submit';
+    f.appendChild(inp); f.appendChild(sub); el.appendChild(f);
+  }
+
+  const handle = document.createElement('div'); handle.classList.add('resize-handle');
+  el.appendChild(handle); parent.appendChild(el); selectElement(el);
+}
+
 // ========== IMAGE UPLOAD ==========
 imageUpload.addEventListener('change', function(e) {
   const file = e.target.files[0]; const imgRef = currentImageUploadTarget;
@@ -162,16 +215,33 @@ function updateFloatingToolbar() {
   floatingToolbar.style.top = `${top}px`; floatingToolbar.style.left = `${selectedElement.offsetLeft}px`;
   floatingToolbar.classList.add('active');
 }
-canvas.addEventListener('mousedown', e => { if (e.target === canvas) selectElement(null); });
+canvas.addEventListener('mousedown', e => {
+  if (e.target === canvas) selectElement(null);
+  // Also deselect when clicking directly on a section/container background (not on a child)
+});
 
 document.addEventListener('mousedown', e => {
-  const el = e.target.closest('.element'); if (!el || !canvas.contains(el)) return;
+  // Find the innermost .element (for nested elements inside section/container)
+  const allElements = e.target.closest ? document.elementsFromPoint(e.clientX, e.clientY) : [];
+  let el = null;
+  for (const elem of allElements) {
+    if (elem.classList && elem.classList.contains('element') && canvas.contains(elem)) {
+      el = elem; break;
+    }
+  }
+  // Fallback
+  if (!el) { el = e.target.closest('.element'); if (!el || !canvas.contains(el)) return; }
+
   const editing = el.querySelector('.text-content.editing');
   if (editing && editing.contains(e.target)) return;
   if (e.target.tagName === 'INPUT') return;
   selectElement(el); activeElement = el; isInteracting = true; startX = e.clientX; startY = e.clientY;
   if (e.target.classList.contains('resize-handle')) { isResizing = true; const r = el.getBoundingClientRect(); initialWidth = r.width; initialHeight = r.height; e.preventDefault(); }
-  else { e.preventDefault(); isResizing = false; initialLeft = el.offsetLeft; initialTop = el.offsetTop; canvas.appendChild(el); }
+  else { e.preventDefault(); isResizing = false; initialLeft = el.offsetLeft; initialTop = el.offsetTop;
+    // Keep element in its current parent (don't reparent nested elements to canvas)
+    const parent = el.parentElement;
+    if (parent) parent.appendChild(el);
+  }
 });
 
 document.addEventListener('mousemove', e => {
@@ -213,10 +283,22 @@ document.getElementById('ft-style').addEventListener('click', () => { if (select
 function updatePropertiesPanel() {
   if (!selectedElement) { propsBody.innerHTML = '<p class="props-empty">Select an element to edit.</p>'; return; }
   let h = '';
-  const textEl = selectedElement.querySelector('.text-content'), btnEl = selectedElement.querySelector('button'), imgEl = selectedElement.querySelector('img');
+  const textEl = selectedElement.querySelector(':scope > .text-content'), btnEl = selectedElement.querySelector(':scope > button'), imgEl = selectedElement.querySelector(':scope > img');
+  const isSection = selectedElement.classList.contains('el-section');
+  const isContainer = selectedElement.classList.contains('el-container');
 
   h += `<div class="prop-group"><div class="prop-label">Position</div><div class="prop-row"><input class="prop-input" id="px" type="number" value="${parseInt(selectedElement.style.left)||0}" step="20"><input class="prop-input" id="py" type="number" value="${parseInt(selectedElement.style.top)||0}" step="20"></div></div>`;
   h += `<div class="prop-group"><div class="prop-label">Size</div><div class="prop-row"><input class="prop-input" id="pw" type="number" value="${selectedElement.offsetWidth}" step="20"><input class="prop-input" id="ph" type="number" value="${selectedElement.offsetHeight}" step="20"></div></div>`;
+
+  // Section / Container specific
+  if (isSection || isContainer) {
+    const cs = getComputedStyle(selectedElement);
+    h += `<div class="prop-group"><div class="prop-label">Background</div><div class="prop-row"><input type="color" class="prop-color-input" id="psc" value="${rgbHex(cs.backgroundColor)}"><input class="prop-input" id="psch" value="${rgbHex(cs.backgroundColor)}"></div></div>`;
+    h += `<div class="prop-group"><div class="prop-label">Padding (px)</div><input class="prop-input" id="pspad" type="number" value="${parseInt(cs.paddingLeft)||0}"></div>`;
+    h += `<div class="prop-group"><div class="prop-label">Border Radius</div><input class="prop-input" id="psbr" type="number" value="${parseInt(cs.borderRadius)||8}"></div>`;
+    const childCount = selectedElement.querySelectorAll(':scope > .element').length;
+    h += `<div class="prop-group"><div class="prop-label">Children</div><p style="font-size:.75rem;color:#6b6b78">${childCount} nested element${childCount !== 1 ? 's' : ''}</p></div>`;
+  }
 
   if (textEl) {
     h += `<div class="prop-group"><div class="prop-label">Content</div><input class="prop-input" id="pt" value="${textEl.innerText.replace(/"/g,'&quot;')}"></div>`;
@@ -244,6 +326,11 @@ function bindProps() {
   b('pbl', e => { const b = selectedElement?.querySelector('button'); if (b) b.innerText = e.target.value; });
   b('pba', e => { const b = selectedElement?.querySelector('button'); if (b) b.setAttribute('data-alert', e.target.value); });
   b('pis', e => { const i = selectedElement?.querySelector('img'); if (i && e.target.value !== 'base64') i.src = e.target.value; });
+  // Section/Container props
+  b('psc', e => { if (selectedElement) selectedElement.style.backgroundColor = e.target.value; const h = document.getElementById('psch'); if (h) h.value = e.target.value; });
+  b('psch', e => { if (selectedElement) selectedElement.style.backgroundColor = e.target.value; const p = document.getElementById('psc'); if (p) p.value = e.target.value; });
+  b('pspad', e => { if (selectedElement) selectedElement.style.padding = e.target.value + 'px'; });
+  b('psbr', e => { if (selectedElement) selectedElement.style.borderRadius = e.target.value + 'px'; });
   document.querySelectorAll('.prop-input,.prop-color-input').forEach(i => i.addEventListener('change', () => saveState()));
 }
 function rgbHex(rgb) { if (rgb.startsWith('#')) return rgb; const m = rgb.match(/\d+/g); if (!m||m.length<3) return '#000000'; return '#' + m.slice(0,3).map(n=>parseInt(n).toString(16).padStart(2,'0')).join(''); }
@@ -325,4 +412,258 @@ document.getElementById('btn-deploy').addEventListener('click', () => {
     requestAnimationFrame(draw);
   }
   draw();
+})();
+
+// ========== TEMPLATES ==========
+function addTextEl(text, x, y, fontSize, fontWeight, color) {
+  createElementOnCanvas('text', x, y);
+  const t = canvas.lastElementChild.querySelector('.text-content');
+  if (t) { t.innerText = text; t.style.fontSize = fontSize; t.style.fontWeight = fontWeight || '400'; if (color) t.style.color = color; }
+}
+function addImgEl(x, y, w, h) {
+  const el = document.createElement('div'); el.classList.add('element');
+  el.style.left = `${x}px`; el.style.top = `${y}px`; el.style.width = `${w}px`; el.style.height = `${h}px`;
+  const img = document.createElement('img'); img.src = `https://picsum.photos/${w*2}/${h*2}`;
+  el.appendChild(img);
+  const handle = document.createElement('div'); handle.classList.add('resize-handle'); el.appendChild(handle);
+  canvas.appendChild(el);
+}
+
+const templates = {
+  hero: {
+    name: 'Hero Section',
+    desc: 'A bold hero with heading, subtext, and CTA button.',
+    apply() {
+      addTextEl('Build Something Amazing', 60, 60, '2.4rem', '700');
+      addTextEl('The no-code platform that lets you create stunning websites in minutes.', 60, 120, '1rem', '400', '#666');
+      createElementOnCanvas('button', 60, 180);
+    }
+  },
+  landing: {
+    name: 'Landing Page',
+    desc: 'Full landing page with nav, hero, features, and footer.',
+    apply() {
+      // Nav
+      addTextEl('MySite', 40, 20, '1.3rem', '700');
+      addTextEl('Home   About   Features   Contact', 300, 24, '0.85rem', '500', '#888');
+      // Hero
+      addTextEl('Build Websites Without Code', 40, 100, '2.4rem', '700');
+      addTextEl('DesignDropX makes it easy to create beautiful, responsive websites with drag-and-drop simplicity.', 40, 160, '1rem', '400', '#666');
+      createElementOnCanvas('button', 40, 220);
+      addImgEl(440, 80, 260, 180);
+      // Features
+      addTextEl('⚡ Fast', 40, 320, '1.2rem', '700');
+      addTextEl('Lightning-fast builder.', 40, 352, '0.85rem', '400', '#888');
+      addTextEl('🎨 Beautiful', 260, 320, '1.2rem', '700');
+      addTextEl('Premium design templates.', 260, 352, '0.85rem', '400', '#888');
+      addTextEl('🚀 Deploy', 480, 320, '1.2rem', '700');
+      addTextEl('One-click deployment.', 480, 352, '0.85rem', '400', '#888');
+      // Footer
+      addTextEl('© 2026 MySite. All rights reserved.', 40, 440, '0.75rem', '400', '#aaa');
+    }
+  },
+  portfolio: {
+    name: 'Portfolio',
+    desc: 'A clean portfolio with intro, project images, and contact.',
+    apply() {
+      addTextEl('Jane Doe', 40, 30, '2rem', '700');
+      addTextEl('Designer & Developer', 40, 70, '0.9rem', '500', '#888');
+      // Projects
+      addTextEl('Projects', 40, 130, '1.4rem', '700');
+      addImgEl(40, 170, 200, 140);
+      addImgEl(260, 170, 200, 140);
+      addImgEl(480, 170, 200, 140);
+      // Contact
+      addTextEl('Get in Touch', 40, 340, '1.4rem', '700');
+      createElementOnCanvas('form', 40, 380);
+    }
+  }
+};
+
+function applyTemplate(key) {
+  canvas.innerHTML = '';
+  selectElement(null);
+  templates[key].apply();
+  saveState();
+  showToast(`✨ ${templates[key].name} template applied!`);
+}
+
+// Modal wiring
+(function() {
+  const modal = document.getElementById('tpl-modal');
+  const title = document.getElementById('tpl-modal-title');
+  const desc = document.getElementById('tpl-modal-desc');
+  const cancelBtn = document.getElementById('tpl-cancel');
+  const confirmBtn = document.getElementById('tpl-confirm');
+  let pendingTpl = null;
+
+  document.querySelectorAll('.tpl-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const key = card.dataset.tpl;
+      pendingTpl = key;
+      title.textContent = `Apply ${templates[key].name}?`;
+      desc.textContent = 'This will clear the canvas and insert a pre-designed layout. All elements will remain fully editable.';
+      modal.classList.add('open');
+    });
+  });
+
+  cancelBtn.addEventListener('click', () => { modal.classList.remove('open'); pendingTpl = null; });
+  confirmBtn.addEventListener('click', () => { if (pendingTpl) applyTemplate(pendingTpl); modal.classList.remove('open'); pendingTpl = null; });
+  modal.addEventListener('click', e => { if (e.target === modal) { modal.classList.remove('open'); pendingTpl = null; } });
+
+  // Empty state "Use Template" button
+  const emptyTplBtn = document.getElementById('empty-tpl-btn');
+  if (emptyTplBtn) {
+    emptyTplBtn.addEventListener('click', () => {
+      pendingTpl = 'landing';
+      title.textContent = `Apply ${templates.landing.name}?`;
+      desc.textContent = 'This will insert a pre-designed landing page. All elements will be fully editable.';
+      modal.classList.add('open');
+    });
+  }
+})();
+
+// ========== AI ASSISTANT ==========
+(function() {
+  const toggle = document.getElementById('ai-toggle');
+  const panel = document.getElementById('ai-panel');
+  const closeBtn = document.getElementById('ai-close');
+  const input = document.getElementById('ai-input');
+  const sendBtn = document.getElementById('ai-send');
+  const msgs = document.getElementById('ai-messages');
+
+  toggle.addEventListener('click', () => panel.classList.toggle('open'));
+  closeBtn.addEventListener('click', () => panel.classList.remove('open'));
+
+  function addMsg(text, type) {
+    const d = document.createElement('div');
+    d.className = 'ai-msg ' + type;
+    d.innerHTML = text;
+    msgs.appendChild(d);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function botReply(text) {
+    setTimeout(() => addMsg(text, 'ai-bot'), 400);
+  }
+
+  function getNextY() {
+    let maxY = 40;
+    canvas.querySelectorAll('.element').forEach(el => {
+      const bottom = parseInt(el.style.top) + el.offsetHeight;
+      if (bottom > maxY) maxY = bottom;
+    });
+    return Math.round((maxY + 20) / SNAP) * SNAP;
+  }
+
+  function processCommand(text) {
+    const t = text.toLowerCase();
+
+    if (t.includes('landing') && (t.includes('page') || t.includes('template'))) {
+      applyTemplate('landing');
+      botReply('✅ Landing Page template applied! All elements are draggable and editable.');
+    }
+    else if (t.includes('portfolio') && (t.includes('page') || t.includes('template') || t.includes('create') || t.includes('add') || t.includes('build'))) {
+      applyTemplate('portfolio');
+      botReply('✅ Portfolio template applied!');
+    }
+    else if (t.includes('hero')) {
+      applyTemplate('hero');
+      botReply('✅ Hero section template applied! Heading, description, and CTA button added.');
+    }
+    else if (t.includes('heading') || t.includes('title') || t.includes('h1')) {
+      const y = getNextY();
+      createElementOnCanvas('text', 40, y);
+      const h = canvas.lastElementChild.querySelector('.text-content');
+      if (h) { h.innerText = 'Your Heading Here'; h.style.fontSize = '1.8rem'; h.style.fontWeight = '700'; }
+      saveState();
+      botReply('✅ Heading added! Double-click to edit the text.');
+    }
+    else if (t.includes('paragraph') || t.includes('para')) {
+      const y = getNextY();
+      createElementOnCanvas('text', 40, y);
+      const p = canvas.lastElementChild.querySelector('.text-content');
+      if (p) { p.innerText = 'This is a paragraph. Double-click to edit.'; p.style.fontSize = '1rem'; p.style.color = '#555'; }
+      saveState();
+      botReply('✅ Paragraph added!');
+    }
+    else if (t.includes('text')) {
+      createElementOnCanvas('text', 40, getNextY());
+      saveState();
+      botReply('✅ Text element added! Double-click to edit.');
+    }
+    else if (t.includes('button') || t.includes('btn') || t.includes('cta')) {
+      createElementOnCanvas('button', 40, getNextY());
+      saveState();
+      botReply('✅ Button created!');
+    }
+    else if (t.includes('image') || t.includes('img') || t.includes('photo') || t.includes('picture')) {
+      const y = getNextY();
+      const el = document.createElement('div');
+      el.classList.add('element');
+      el.style.left = '40px'; el.style.top = `${y}px`;
+      el.style.width = '200px'; el.style.height = '200px';
+      const img = document.createElement('img');
+      img.src = 'https://picsum.photos/400/300';
+      el.appendChild(img);
+      const handle = document.createElement('div'); handle.classList.add('resize-handle');
+      el.appendChild(handle);
+      canvas.appendChild(el);
+      selectElement(el);
+      saveState();
+      botReply('✅ Image added with placeholder! Select it to change the source in Properties.');
+    }
+    else if (t.includes('form') || t.includes('subscribe') || t.includes('email')) {
+      createElementOnCanvas('form', 40, getNextY());
+      saveState();
+      botReply('✅ Form element added with email input and submit button!');
+    }
+    else if (t.includes('section')) {
+      createElementOnCanvas('section', 40, getNextY());
+      saveState();
+      botReply('✅ Section container added! Drag other elements inside it.');
+    }
+    else if (t.includes('container') || t.includes('box') || t.includes('div')) {
+      createElementOnCanvas('container', 40, getNextY());
+      saveState();
+      botReply('✅ Container added!');
+    }
+    else if (t.includes('nav') || t.includes('navbar') || t.includes('menu')) {
+      const y = getNextY();
+      createElementOnCanvas('section', 20, y);
+      const sec = canvas.lastElementChild;
+      sec.style.width = '90%'; sec.style.height = '60px';
+      createElementOnCanvas('text', 40, y + 10);
+      const logo = canvas.lastElementChild.querySelector('.text-content');
+      if (logo) { logo.innerText = 'MySite'; logo.style.fontSize = '1.2rem'; logo.style.fontWeight = '700'; }
+      saveState();
+      botReply('✅ Navigation bar added with logo text!');
+    }
+    else if (t.includes('clear') || t.includes('reset') || t.includes('delete all')) {
+      canvas.innerHTML = '';
+      selectElement(null);
+      saveState();
+      botReply('🗑️ Canvas cleared!');
+    }
+    else if (t.includes('help') || t.includes('what can')) {
+      botReply('I can add: <b>hero section</b>, <b>heading</b>, <b>paragraph</b>, <b>text</b>, <b>button</b>, <b>image</b>, <b>form</b>, <b>section</b>, <b>container</b>, <b>navbar</b>. Templates: <b>landing page</b>, <b>portfolio</b>. I can also <b>clear</b> the canvas!');
+    }
+    else {
+      botReply("🤔 I didn't understand that. Try saying something like \"add a hero section\" or \"create a button\". Type <b>help</b> for all commands.");
+    }
+  }
+
+  function send() {
+    const val = input.value.trim();
+    if (!val) return;
+    addMsg(val, 'ai-user');
+    input.value = '';
+    processCommand(val);
+  }
+
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+  // Stop propagation so typing in AI input doesn't trigger builder shortcuts
+  input.addEventListener('mousedown', e => e.stopPropagation());
 })();

@@ -45,9 +45,28 @@
         <div class="sb-item" draggable="true" data-type="container"><span class="si si-pink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg></span>Container</div>
       </div>
       <div class="sb-divider"></div>
+      <div class="sb-title">Templates</div>
+      <div class="sb-list">
+        <div class="tpl-card" data-tpl="landing"><span class="si si-blue">🚀</span>Landing Page</div>
+        <div class="tpl-card" data-tpl="portfolio"><span class="si si-purple">🎨</span>Portfolio</div>
+        <div class="tpl-card" data-tpl="hero"><span class="si si-cyan">⚡</span>Hero Section</div>
+      </div>
+      <div class="sb-divider"></div>
       <div class="sb-title">Layers</div>
       <div id="layers-list" class="layers-list"><p class="layers-empty">No elements</p></div>
     </aside>
+
+    <!-- Template Confirm Modal -->
+    <div id="tpl-modal" class="tpl-modal">
+      <div class="tpl-modal-card">
+        <h3 id="tpl-modal-title">Apply Template?</h3>
+        <p id="tpl-modal-desc">This will clear the canvas and insert a pre-designed layout.</p>
+        <div class="tpl-modal-actions">
+          <button id="tpl-cancel" class="nb nb-outline">Cancel</button>
+          <button id="tpl-confirm" class="nb nb-glow">Apply</button>
+        </div>
+      </div>
+    </div>
 
     <!-- CANVAS -->
     <div class="canvas-wrap" id="canvas-wrapper">
@@ -56,7 +75,19 @@
         <button id="ft-duplicate" title="Duplicate">📋</button>
         <button id="ft-delete" title="Delete">❌</button>
       </div>
-      <div class="canvas" id="canvas"></div>
+      <div class="canvas" id="canvas">
+        <div id="root-container" class="root-container">
+          <span class="root-label">Main Section</span>
+        </div>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18"/><path d="M9 3v6"/></svg>
+          </div>
+          <h3>Start building your website</h3>
+          <p>Drag components from the sidebar, or use a template to get started.</p>
+          <button id="empty-tpl-btn" class="empty-tpl-btn">✨ Use a Template</button>
+        </div>
+      </div>
     </div>
 
     <!-- PROPERTIES -->
@@ -67,6 +98,24 @@
   </div>
 
   <button id="exit-preview" class="exit-preview" style="display:none;">✕ Exit Preview</button>
+  <!-- AI Assistant -->
+  <button id="ai-toggle" class="ai-toggle" title="AI Assistant">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/></svg>
+  </button>
+  <div id="ai-panel" class="ai-panel">
+    <div class="ai-header">
+      <span>✨ AI Assistant</span>
+      <button id="ai-close" class="ai-close">✕</button>
+    </div>
+    <div id="ai-messages" class="ai-messages">
+      <div class="ai-msg ai-bot">Hi! I can help you build. Try:<br>• "Add a hero section"<br>• "Create a button"<br>• "Add an image"<br>• "Add a form"<br>• "Add heading"<br>• "Add a section"</div>
+    </div>
+    <div class="ai-input-row">
+      <input type="text" id="ai-input" class="ai-input" placeholder="Ask me to build something...">
+      <button id="ai-send" class="ai-send">→</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
   <script src="script.js"></script>
 </body>
