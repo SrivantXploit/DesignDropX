@@ -25,14 +25,33 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 function saveState() {
   if (isRestoring) return;
-  const html = canvas.innerHTML;
+  const state = JSON.stringify({ html: canvas.innerHTML, bg: canvas.style.backgroundImage || '' });
   if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
-  history.push(html); historyIndex++;
-  localStorage.setItem('builderState', html);
+  history.push(state); historyIndex++;
+  localStorage.setItem('builderState', state);
   updateLayers(); updateEmptyState();
 }
-function restoreState(html) {
-  isRestoring = true; canvas.innerHTML = html;
+function restoreState(s) {
+  isRestoring = true;
+  let html = s, bg = '';
+  try {
+    const parsed = JSON.parse(s);
+    if (parsed && typeof parsed === 'object' && parsed.html !== undefined) {
+      html = parsed.html;
+      bg = parsed.bg || '';
+    }
+  } catch(e) { /* old format: raw HTML string */ }
+  canvas.innerHTML = html;
+  canvas.style.backgroundImage = bg;
+  if (bg) {
+    canvas.style.backgroundSize = 'cover';
+    canvas.style.backgroundPosition = 'center';
+    canvas.style.backgroundRepeat = 'no-repeat';
+  } else {
+    canvas.style.backgroundSize = '';
+    canvas.style.backgroundPosition = '';
+    canvas.style.backgroundRepeat = '';
+  }
   selectedElement = null; activeElement = null;
   updateFloatingToolbar(); updatePropertiesPanel(); updateLayers(); updateEmptyState();
   isRestoring = false;
@@ -336,7 +355,16 @@ function bindProps() {
 function rgbHex(rgb) { if (rgb.startsWith('#')) return rgb; const m = rgb.match(/\d+/g); if (!m||m.length<3) return '#000000'; return '#' + m.slice(0,3).map(n=>parseInt(n).toString(16).padStart(2,'0')).join(''); }
 
 // ========== MAIN ACTIONS ==========
-document.getElementById('btn-clear').addEventListener('click', () => { if (confirm('Clear canvas?')) { canvas.innerHTML = ''; selectElement(null); saveState(); } });
+document.getElementById('btn-clear').addEventListener('click', () => {
+  canvas.querySelectorAll('.element').forEach(el => el.remove());
+  canvas.style.backgroundImage = '';
+  canvas.style.backgroundSize = '';
+  canvas.style.backgroundPosition = '';
+  canvas.style.backgroundRepeat = '';
+  selectElement(null);
+  saveState();
+  showToast('Canvas cleared! 🗑️');
+});
 document.getElementById('btn-preview').addEventListener('click', () => { document.body.classList.add('preview-mode'); document.getElementById('exit-preview').style.display = 'block'; selectElement(null); });
 document.getElementById('exit-preview').addEventListener('click', () => { document.body.classList.remove('preview-mode'); document.getElementById('exit-preview').style.display = 'none'; });
 
@@ -414,111 +442,47 @@ document.getElementById('btn-deploy').addEventListener('click', () => {
   draw();
 })();
 
-// ========== TEMPLATES ==========
-function addTextEl(text, x, y, fontSize, fontWeight, color) {
-  createElementOnCanvas('text', x, y);
-  const t = canvas.lastElementChild.querySelector('.text-content');
-  if (t) { t.innerText = text; t.style.fontSize = fontSize; t.style.fontWeight = fontWeight || '400'; if (color) t.style.color = color; }
-}
-function addImgEl(x, y, w, h) {
-  const el = document.createElement('div'); el.classList.add('element');
-  el.style.left = `${x}px`; el.style.top = `${y}px`; el.style.width = `${w}px`; el.style.height = `${h}px`;
-  const img = document.createElement('img'); img.src = `https://picsum.photos/${w*2}/${h*2}`;
-  el.appendChild(img);
-  const handle = document.createElement('div'); handle.classList.add('resize-handle'); el.appendChild(handle);
-  canvas.appendChild(el);
+// ========== BACKGROUND TEMPLATE ==========
+const bgUpload = document.createElement('input');
+bgUpload.type = 'file';
+bgUpload.accept = 'image/*';
+bgUpload.style.display = 'none';
+document.body.appendChild(bgUpload);
+
+function applyBackgroundTemplate() {
+  bgUpload.click();
 }
 
-const templates = {
-  hero: {
-    name: 'Hero Section',
-    desc: 'A bold hero with heading, subtext, and CTA button.',
-    apply() {
-      addTextEl('Build Something Amazing', 60, 60, '2.4rem', '700');
-      addTextEl('The no-code platform that lets you create stunning websites in minutes.', 60, 120, '1rem', '400', '#666');
-      createElementOnCanvas('button', 60, 180);
-    }
-  },
-  landing: {
-    name: 'Landing Page',
-    desc: 'Full landing page with nav, hero, features, and footer.',
-    apply() {
-      // Nav
-      addTextEl('MySite', 40, 20, '1.3rem', '700');
-      addTextEl('Home   About   Features   Contact', 300, 24, '0.85rem', '500', '#888');
-      // Hero
-      addTextEl('Build Websites Without Code', 40, 100, '2.4rem', '700');
-      addTextEl('DesignDropX makes it easy to create beautiful, responsive websites with drag-and-drop simplicity.', 40, 160, '1rem', '400', '#666');
-      createElementOnCanvas('button', 40, 220);
-      addImgEl(440, 80, 260, 180);
-      // Features
-      addTextEl('⚡ Fast', 40, 320, '1.2rem', '700');
-      addTextEl('Lightning-fast builder.', 40, 352, '0.85rem', '400', '#888');
-      addTextEl('🎨 Beautiful', 260, 320, '1.2rem', '700');
-      addTextEl('Premium design templates.', 260, 352, '0.85rem', '400', '#888');
-      addTextEl('🚀 Deploy', 480, 320, '1.2rem', '700');
-      addTextEl('One-click deployment.', 480, 352, '0.85rem', '400', '#888');
-      // Footer
-      addTextEl('© 2026 MySite. All rights reserved.', 40, 440, '0.75rem', '400', '#aaa');
-    }
-  },
-  portfolio: {
-    name: 'Portfolio',
-    desc: 'A clean portfolio with intro, project images, and contact.',
-    apply() {
-      addTextEl('Jane Doe', 40, 30, '2rem', '700');
-      addTextEl('Designer & Developer', 40, 70, '0.9rem', '500', '#888');
-      // Projects
-      addTextEl('Projects', 40, 130, '1.4rem', '700');
-      addImgEl(40, 170, 200, 140);
-      addImgEl(260, 170, 200, 140);
-      addImgEl(480, 170, 200, 140);
-      // Contact
-      addTextEl('Get in Touch', 40, 340, '1.4rem', '700');
-      createElementOnCanvas('form', 40, 380);
-    }
-  }
-};
+bgUpload.addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    canvas.style.backgroundImage = `url('${ev.target.result}')`;
+    canvas.style.backgroundSize = 'cover';
+    canvas.style.backgroundPosition = 'center';
+    canvas.style.backgroundRepeat = 'no-repeat';
+    saveState();
+    showToast('🖼️ Background image applied!');
+  };
+  reader.readAsDataURL(file);
+  bgUpload.value = '';
+});
 
-function applyTemplate(key) {
-  canvas.innerHTML = '';
-  selectElement(null);
-  templates[key].apply();
-  saveState();
-  showToast(`✨ ${templates[key].name} template applied!`);
-}
-
-// Modal wiring
+// Template card click
 (function() {
-  const modal = document.getElementById('tpl-modal');
-  const title = document.getElementById('tpl-modal-title');
-  const desc = document.getElementById('tpl-modal-desc');
-  const cancelBtn = document.getElementById('tpl-cancel');
-  const confirmBtn = document.getElementById('tpl-confirm');
-  let pendingTpl = null;
-
-  document.querySelectorAll('.tpl-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const key = card.dataset.tpl;
-      pendingTpl = key;
-      title.textContent = `Apply ${templates[key].name}?`;
-      desc.textContent = 'This will clear the canvas and insert a pre-designed layout. All elements will remain fully editable.';
-      modal.classList.add('open');
+  const bgCard = document.querySelector('.tpl-card[data-tpl="background"]');
+  if (bgCard) {
+    bgCard.addEventListener('click', () => {
+      applyBackgroundTemplate();
     });
-  });
+  }
 
-  cancelBtn.addEventListener('click', () => { modal.classList.remove('open'); pendingTpl = null; });
-  confirmBtn.addEventListener('click', () => { if (pendingTpl) applyTemplate(pendingTpl); modal.classList.remove('open'); pendingTpl = null; });
-  modal.addEventListener('click', e => { if (e.target === modal) { modal.classList.remove('open'); pendingTpl = null; } });
-
-  // Empty state "Use Template" button
+  // Empty state "Use a Template" button — now opens background picker
   const emptyTplBtn = document.getElementById('empty-tpl-btn');
   if (emptyTplBtn) {
     emptyTplBtn.addEventListener('click', () => {
-      pendingTpl = 'landing';
-      title.textContent = `Apply ${templates.landing.name}?`;
-      desc.textContent = 'This will insert a pre-designed landing page. All elements will be fully editable.';
-      modal.classList.add('open');
+      applyBackgroundTemplate();
     });
   }
 })();
@@ -559,18 +523,11 @@ function applyTemplate(key) {
   function processCommand(text) {
     const t = text.toLowerCase();
 
-    if (t.includes('landing') && (t.includes('page') || t.includes('template'))) {
-      applyTemplate('landing');
-      botReply('✅ Landing Page template applied! All elements are draggable and editable.');
+    if (t.includes('background') || t.includes('bg') || t.includes('wallpaper')) {
+      applyBackgroundTemplate();
+      botReply('✅ Choose an image from your computer to set as the background!');
     }
-    else if (t.includes('portfolio') && (t.includes('page') || t.includes('template') || t.includes('create') || t.includes('add') || t.includes('build'))) {
-      applyTemplate('portfolio');
-      botReply('✅ Portfolio template applied!');
-    }
-    else if (t.includes('hero')) {
-      applyTemplate('hero');
-      botReply('✅ Hero section template applied! Heading, description, and CTA button added.');
-    }
+
     else if (t.includes('heading') || t.includes('title') || t.includes('h1')) {
       const y = getNextY();
       createElementOnCanvas('text', 40, y);
@@ -640,13 +597,14 @@ function applyTemplate(key) {
       botReply('✅ Navigation bar added with logo text!');
     }
     else if (t.includes('clear') || t.includes('reset') || t.includes('delete all')) {
-      canvas.innerHTML = '';
+      canvas.querySelectorAll('.element').forEach(el => el.remove());
+      canvas.style.backgroundImage = '';
       selectElement(null);
       saveState();
       botReply('🗑️ Canvas cleared!');
     }
     else if (t.includes('help') || t.includes('what can')) {
-      botReply('I can add: <b>hero section</b>, <b>heading</b>, <b>paragraph</b>, <b>text</b>, <b>button</b>, <b>image</b>, <b>form</b>, <b>section</b>, <b>container</b>, <b>navbar</b>. Templates: <b>landing page</b>, <b>portfolio</b>. I can also <b>clear</b> the canvas!');
+      botReply('I can add: <b>heading</b>, <b>paragraph</b>, <b>text</b>, <b>button</b>, <b>image</b>, <b>form</b>, <b>section</b>, <b>container</b>, <b>navbar</b>, <b>background</b>. I can also <b>clear</b> the canvas!');
     }
     else {
       botReply("🤔 I didn't understand that. Try saying something like \"add a hero section\" or \"create a button\". Type <b>help</b> for all commands.");
