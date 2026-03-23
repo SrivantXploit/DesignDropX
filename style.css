@@ -1,0 +1,44 @@
+body {
+margin: 0;
+font-family: Arial, sans-serif;
+}
+
+h1 {
+padding: 10px;
+}
+
+.container {
+display: flex;
+height: 90vh;
+}
+
+/* Sidebar */
+.sidebar {
+width: 200px;
+background: #1e1e2f;
+color: white;
+padding: 15px;
+}
+
+.sidebar p {
+background: #333;
+padding: 10px;
+margin: 10px 0;
+cursor: grab;
+border-radius: 5px;
+text-align: center;
+}
+
+/* Canvas */
+.canvas {
+flex: 1;
+background: #f4f4f4;
+padding: 20px;
+border-left: 2px solid #ccc;
+}
+.canvas img {
+width: 150px;
+height: auto;
+display: block;
+margin: 10px 0;
+}
