@@ -16,7 +16,7 @@ let history = [], historyIndex = -1, isRestoring = false;
 const emptyState = document.getElementById('empty-state');
 
 // Sign Out
-document.getElementById('btn-signout').addEventListener('click', () => window.location.href = 'login.html');
+document.getElementById('btn-signout').addEventListener('click', () => window.location.href = 'index.html');
 
 // ========== HISTORY ==========
 window.addEventListener('DOMContentLoaded', () => {
@@ -355,16 +355,48 @@ function bindProps() {
 function rgbHex(rgb) { if (rgb.startsWith('#')) return rgb; const m = rgb.match(/\d+/g); if (!m||m.length<3) return '#000000'; return '#' + m.slice(0,3).map(n=>parseInt(n).toString(16).padStart(2,'0')).join(''); }
 
 // ========== MAIN ACTIONS ==========
-document.getElementById('btn-clear').addEventListener('click', () => {
-  canvas.querySelectorAll('.element').forEach(el => el.remove());
+function resetCanvas() {
+  // 1. Remove any child from canvas that isn't part of the core structure (root-container or empty-state)
+  [...canvas.children].forEach(child => {
+    if (child.id !== 'root-container' && child.id !== 'empty-state' && child.id !== 'floating-toolbar') {
+      child.remove();
+    }
+  });
+
+  // 2. Also clear anything that might have been nested inside root-container
+  const rootContainer = document.getElementById('root-container');
+  if (rootContainer) {
+    const label = rootContainer.querySelector('.root-label');
+    rootContainer.innerHTML = '';
+    if (label) rootContainer.appendChild(label);
+  }
+
+  // 3. Reset background
   canvas.style.backgroundImage = '';
   canvas.style.backgroundSize = '';
   canvas.style.backgroundPosition = '';
   canvas.style.backgroundRepeat = '';
+
+  // 4. Reset internal state
   selectElement(null);
+  activeElement = null;
+  currentImageUploadTarget = null;
+  isInteracting = false;
+  isResizing = false;
+
+  // 5. Update UI components
+  updateFloatingToolbar();
+  updatePropertiesPanel();
+  updateLayers();
+  updateEmptyState();
+
+  // 6. Save State for undo/redo
   saveState();
-  showToast('Canvas cleared! 🗑️');
-});
+
+  showToast('Canvas fully reset! 🗑️');
+}
+
+document.getElementById('btn-clear').addEventListener('click', resetCanvas);
 document.getElementById('btn-preview').addEventListener('click', () => { document.body.classList.add('preview-mode'); document.getElementById('exit-preview').style.display = 'block'; selectElement(null); });
 document.getElementById('exit-preview').addEventListener('click', () => { document.body.classList.remove('preview-mode'); document.getElementById('exit-preview').style.display = 'none'; });
 
@@ -597,10 +629,7 @@ bgUpload.addEventListener('change', function(e) {
       botReply('✅ Navigation bar added with logo text!');
     }
     else if (t.includes('clear') || t.includes('reset') || t.includes('delete all')) {
-      canvas.querySelectorAll('.element').forEach(el => el.remove());
-      canvas.style.backgroundImage = '';
-      selectElement(null);
-      saveState();
+      resetCanvas();
       botReply('🗑️ Canvas cleared!');
     }
     else if (t.includes('help') || t.includes('what can')) {
