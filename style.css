@@ -218,9 +218,26 @@ body.preview-mode .root-container{outline:none!important}
 
 /* Form */
 .element form{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;background:#fff;padding:15px;border-radius:8px;border:1px solid #e5e7eb}
-.element input[type="text"]{padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;width:100%;font-family:inherit;font-size:.95rem}
-.element input[type="submit"]{padding:10px 12px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-family:inherit;font-size:.95rem}
+.element input, .element textarea{padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;width:100%;height:100%;box-sizing:border-box;font-family:inherit;font-size:.95rem;resize:none}
+.element input[type="submit"]{background:#10b981;color:#fff;border:none;cursor:pointer;font-weight:600}
 .element input[type="submit"]:hover{background:#059669}
+
+/* Pointer Event Locks in Builder Mode */
+body:not(.preview-mode) .element input, 
+body:not(.preview-mode) .element textarea, 
+body:not(.preview-mode) .element button {
+  pointer-events: none;
+}
+
+.element.el-form{
+  background:rgba(251,146,60,.03);border:1px dashed rgba(251,146,60,.2);border-radius:8px;
+  min-height:80px;position:relative;overflow:visible;padding-top:20px;
+}
+.element.el-form .form-label{position:absolute;top:4px;left:8px;font-size:.6rem;font-weight:600;color:rgba(251,146,60,.4);text-transform:uppercase;letter-spacing:1px;pointer-events:none;z-index:1}
+.element.el-form.drop-target{
+  border-color:rgba(251,146,60,.6);background:rgba(251,146,60,.06);
+  box-shadow:0 0 16px rgba(251,146,60,.1) inset;
+}
 
 /* Section */
 .element.el-section{
@@ -244,8 +261,15 @@ body.preview-mode .root-container{outline:none!important}
   box-shadow:0 0 16px rgba(244,114,182,.1) inset;
 }
 
-/* Nested elements inside section/container */
-.el-section>.element,.el-container>.element{position:absolute}
+/* Column Drop target styling */
+.element.el-column.drop-target {
+  border-color: #6c63ff !important;
+  background: rgba(108,99,255,0.06);
+  box-shadow: 0 0 12px rgba(108,99,255,0.15) inset;
+}
+
+/* Nested elements inside section/container/form/column */
+.el-section>.element,.el-container>.element,.el-form>.element,.el-column>.element{position:absolute}
 
 /* =========== PREVIEW =========== */
 body.preview-mode .navbar,body.preview-mode .sidebar,body.preview-mode .props,body.preview-mode .ftbar{display:none!important}
@@ -255,8 +279,8 @@ body.preview-mode .canvas{border-radius:0;box-shadow:none;min-height:100vh}
 body.preview-mode .element{cursor:default;outline:none!important;box-shadow:none!important}
 body.preview-mode .element .text-content{cursor:default}
 body.preview-mode .resize-handle{display:none!important}
-body.preview-mode .el-section .section-label,body.preview-mode .el-container .container-label{display:none}
-body.preview-mode .el-section,body.preview-mode .el-container{border:none;background:transparent}
+body.preview-mode .el-section .section-label,body.preview-mode .el-container .container-label,body.preview-mode .el-form .form-label{display:none}
+body.preview-mode .el-section,body.preview-mode .el-container,body.preview-mode .el-form{border:none;background:transparent}
 
 .exit-preview{
   position:fixed;top:12px;right:12px;z-index:9999;padding:8px 16px;

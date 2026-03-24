@@ -16,12 +16,53 @@ let history = [], historyIndex = -1, isRestoring = false;
 const emptyState = document.getElementById('empty-state');
 
 // Sign Out
-document.getElementById('btn-signout').addEventListener('click', () => window.location.href = 'index.html');
+const logoutNode = document.getElementById('logoutBtn') || document.getElementById('btn-signout');
+if (logoutNode) {
+  logoutNode.addEventListener('click', () => {
+    localStorage.removeItem('loggedIn');
+    window.location.href = 'login.html';
+  });
+}
 
 // ========== HISTORY ==========
+function createDefaultLayout() {
+  createElementOnCanvas('section', 40, 40);
+  const sec = canvas.lastElementChild;
+  sec.style.width = '800px'; sec.style.height = '360px'; sec.style.backgroundColor = '#f8fafc';
+  sec.style.border = '1px solid #e2e8f0';
+  sec.querySelector('.section-label').innerText = 'Starting Template';
+
+  createElementInParent('text', 40, 40, sec);
+  const hEl = sec.lastElementChild;
+  const h = hEl.querySelector('.text-content');
+  h.innerText = 'Build Your Website'; h.style.fontSize = '36px'; h.style.fontWeight = '700'; h.style.color = '#0f172a';
+  hEl.style.width = '400px'; hEl.style.height = '60px';
+
+  createElementInParent('text', 40, 110, sec);
+  const pEl = sec.lastElementChild;
+  const p = pEl.querySelector('.text-content');
+  p.innerText = 'Start with this layout or drag elements from the sidebar to customize your page structure and typography.'; p.style.fontSize = '16px'; p.style.color = '#475569';
+  pEl.style.width = '380px'; pEl.style.height = '60px';
+
+  createElementInParent('button', 40, 200, sec);
+  const bEl = sec.lastElementChild;
+  bEl.style.width = '160px'; bEl.style.height = '48px';
+  const btn = bEl.querySelector('button');
+  btn.innerText = 'Get Started'; btn.setAttribute('data-alert', 'Welcome!');
+
+  createElementInParent('image', 440, 40, sec);
+  const iEl = sec.lastElementChild;
+  iEl.style.width = '320px'; iEl.style.height = '280px';
+  const img = iEl.querySelector('img');
+  img.src = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80';
+  img.style.borderRadius = '8px'; img.style.objectFit = 'cover';
+
+  selectElement(null);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   const s = localStorage.getItem('builderState');
-  if (s) { restoreState(s); history.push(s); historyIndex++; } else saveState();
+  if (s) { restoreState(s); history.push(s); historyIndex++; } else { createDefaultLayout(); saveState(); }
 });
 function saveState() {
   if (isRestoring) return;
@@ -96,8 +137,8 @@ draggables.forEach(d => {
 });
 canvas.addEventListener('dragover', e => {
   e.preventDefault(); canvas.classList.add('drag-over');
-  // Highlight section/container drop targets
-  const target = e.target.closest('.el-section, .el-container');
+  // Highlight section/container/form drop targets
+  const target = e.target.closest('.el-section, .el-container, .el-form');
   document.querySelectorAll('.drop-target').forEach(d => d.classList.remove('drop-target'));
   if (target && canvas.contains(target)) target.classList.add('drop-target');
 });
@@ -111,9 +152,10 @@ canvas.addEventListener('drop', e => {
   const type = e.dataTransfer.getData('text/plain');
   if (!type || isInteracting) return;
 
-  // Check if dropping onto a section or container
-  const dropTarget = e.target.closest('.el-section, .el-container');
-  if (dropTarget && canvas.contains(dropTarget) && type !== 'section' && type !== 'container') {
+  // Check if dropping onto a section, container, or form
+  const dropTarget = e.target.closest('.el-section, .el-container, .el-form');
+  // Allow forms/containers to be nested, but prevent sections from being dropped inside anything
+  if (dropTarget && canvas.contains(dropTarget) && type !== 'section') {
     const r = dropTarget.getBoundingClientRect();
     const x = Math.round((e.clientX - r.left) / SNAP) * SNAP;
     const y = Math.round((e.clientY - r.top) / SNAP) * SNAP;
@@ -127,7 +169,7 @@ canvas.addEventListener('drop', e => {
 
 // ========== ELEMENT CREATION ==========
 function createElementOnCanvas(type, x, y) {
-  const el = document.createElement('div');
+  const el = document.createElement(type === 'form' ? 'form' : 'div');
   el.classList.add('element');
   el.style.left = `${x}px`; el.style.top = `${y}px`;
 
@@ -136,24 +178,21 @@ function createElementOnCanvas(type, x, y) {
     t.classList.add('text-content'); t.contentEditable = 'false'; t.innerText = 'Edit this text';
     el.appendChild(t);
   } else if (type === 'button') {
-    const text = prompt('Button text:', 'Click Me') || 'Click Me';
-    const action = prompt('Alert message:', 'Hello!') || 'Hello!';
-    const b = document.createElement('button'); b.innerText = text; b.setAttribute('data-alert', action);
+    const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!');
     el.appendChild(b);
   } else if (type === 'image') {
-    const choice = prompt('"1" for URL, "2" to Upload:', '1');
     const img = document.createElement('img');
     el.style.width = '200px'; el.style.height = '200px';
-    if (choice === '1') { img.src = prompt('Image URL:', 'https://picsum.photos/400/300') || 'https://picsum.photos/400/300'; el.appendChild(img); }
-    else if (choice === '2') { el.appendChild(img); currentImageUploadTarget = img; imageUpload.click(); }
-    else return;
+    img.src = 'https://picsum.photos/400/300';
+    el.appendChild(img);
   } else if (type === 'form') {
-    el.style.width = '240px'; el.style.height = '140px';
-    const f = document.createElement('form'); f.onsubmit = e => e.preventDefault();
-    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Enter email...';
-    inp.addEventListener('mousedown', e => e.stopPropagation());
-    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Subscribe';
-    f.appendChild(inp); f.appendChild(sub); el.appendChild(f);
+    el.classList.add('el-form');
+    el.onsubmit = e => e.preventDefault();
+    el.style.width = '300px'; el.style.height = '220px';
+    el.style.display = 'flex'; el.style.flexDirection = 'column'; el.style.gap = '10px'; el.style.padding = '25px 15px 15px';
+    const lbl = document.createElement('span'); lbl.className = 'form-label'; lbl.textContent = 'Form Engine'; el.appendChild(lbl);
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Enter email...'; inp.addEventListener('mousedown', e => e.stopPropagation()); el.appendChild(inp);
+    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Subscribe'; el.appendChild(sub);
   } else if (type === 'section') {
     el.classList.add('el-section');
     el.style.width = '400px'; el.style.height = '200px';
@@ -164,6 +203,23 @@ function createElementOnCanvas(type, x, y) {
     el.style.width = '240px'; el.style.height = '160px';
     const lbl = document.createElement('span'); lbl.className = 'container-label'; lbl.textContent = 'Container';
     el.appendChild(lbl);
+  } else if (type === 'label') {
+    const lbl = document.createElement('label'); 
+    lbl.classList.add('text-content'); lbl.contentEditable = 'false'; lbl.innerText = 'Field Label';
+    lbl.style.display = 'block'; lbl.style.marginBottom = '5px'; lbl.style.fontWeight = '500'; lbl.style.fontSize = '14px';
+    el.appendChild(lbl);
+  } else if (type === 'input') {
+    const inp = document.createElement('input'); 
+    inp.type = 'text'; inp.placeholder = 'Enter value...'; 
+    inp.addEventListener('mousedown', e => e.stopPropagation());
+    el.style.width = '200px'; el.style.height = '40px';
+    el.appendChild(inp);
+  } else if (type === 'textarea') {
+    const ta = document.createElement('textarea'); 
+    ta.placeholder = 'Type your message...'; 
+    ta.addEventListener('mousedown', e => e.stopPropagation());
+    el.style.width = '200px'; el.style.height = '100px';
+    el.appendChild(ta);
   }
 
   const handle = document.createElement('div'); handle.classList.add('resize-handle');
@@ -172,7 +228,7 @@ function createElementOnCanvas(type, x, y) {
 
 // Create element inside a parent section/container
 function createElementInParent(type, x, y, parent) {
-  const el = document.createElement('div');
+  const el = document.createElement(type === 'form' ? 'form' : 'div');
   el.classList.add('element');
   el.style.left = `${x}px`; el.style.top = `${y}px`;
 
@@ -184,16 +240,48 @@ function createElementInParent(type, x, y, parent) {
     const img = document.createElement('img'); img.src = 'https://picsum.photos/200/150';
     el.style.width = '160px'; el.style.height = '120px'; el.appendChild(img);
   } else if (type === 'form') {
-    el.style.width = '200px'; el.style.height = '120px';
-    const f = document.createElement('form'); f.onsubmit = e => e.preventDefault();
-    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Email...';
+    el.classList.add('el-form');
+    el.onsubmit = e => e.preventDefault();
+    el.style.width = '300px'; el.style.height = '220px';
+    el.style.display = 'flex'; el.style.flexDirection = 'column'; el.style.gap = '10px'; el.style.padding = '25px 15px 15px';
+    const lbl = document.createElement('span'); lbl.className = 'form-label'; lbl.textContent = 'Form Engine'; el.appendChild(lbl);
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Email...'; inp.addEventListener('mousedown', e => e.stopPropagation()); el.appendChild(inp);
+    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Submit'; el.appendChild(sub);
+  } else if (type === 'container') {
+    el.classList.add('el-container');
+    el.style.width = '240px'; el.style.height = '160px';
+    const lbl = document.createElement('span'); lbl.className = 'container-label'; lbl.textContent = 'Container';
+    el.appendChild(lbl);
+  } else if (type === 'section') {
+    el.classList.add('el-section');
+    el.style.width = '300px'; el.style.height = '200px';
+    const lbl = document.createElement('span'); lbl.className = 'section-label'; lbl.textContent = 'Section';
+    el.appendChild(lbl);
+  } else if (type === 'label') {
+    const lbl = document.createElement('label'); 
+    lbl.classList.add('text-content'); lbl.contentEditable = 'false'; lbl.innerText = 'Field Label';
+    lbl.style.display = 'block'; lbl.style.marginBottom = '5px'; lbl.style.fontWeight = '500'; lbl.style.fontSize = '14px';
+    el.appendChild(lbl);
+  } else if (type === 'input') {
+    const inp = document.createElement('input'); 
+    inp.type = 'text'; inp.placeholder = 'Enter value...'; 
     inp.addEventListener('mousedown', e => e.stopPropagation());
-    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Submit';
-    f.appendChild(inp); f.appendChild(sub); el.appendChild(f);
+    el.style.width = '180px'; el.style.height = '40px';
+    el.appendChild(inp);
+  } else if (type === 'textarea') {
+    const ta = document.createElement('textarea'); 
+    ta.placeholder = 'Type your message...'; 
+    ta.addEventListener('mousedown', e => e.stopPropagation());
+    el.style.width = '180px'; el.style.height = '80px';
+    el.appendChild(ta);
   }
 
   const handle = document.createElement('div'); handle.classList.add('resize-handle');
-  el.appendChild(handle); parent.appendChild(el); selectElement(el);
+  el.appendChild(handle); parent.appendChild(el); 
+  if(parent.style.display === 'flex' || parent.style.display === 'grid') {
+    el.style.position = 'relative'; el.style.left = '0'; el.style.top = '0';
+  }
+  selectElement(el);
 }
 
 // ========== IMAGE UPLOAD ==========
@@ -240,6 +328,7 @@ canvas.addEventListener('mousedown', e => {
 });
 
 document.addEventListener('mousedown', e => {
+  if (document.body.classList.contains('preview-mode')) return;
   // Find the innermost .element (for nested elements inside section/container)
   const allElements = e.target.closest ? document.elementsFromPoint(e.clientX, e.clientY) : [];
   let el = null;
@@ -307,14 +396,80 @@ function updatePropertiesPanel() {
   const isContainer = selectedElement.classList.contains('el-container');
 
   h += `<div class="prop-group"><div class="prop-label">Position</div><div class="prop-row"><input class="prop-input" id="px" type="number" value="${parseInt(selectedElement.style.left)||0}" step="20"><input class="prop-input" id="py" type="number" value="${parseInt(selectedElement.style.top)||0}" step="20"></div></div>`;
-  h += `<div class="prop-group"><div class="prop-label">Size</div><div class="prop-row"><input class="prop-input" id="pw" type="number" value="${selectedElement.offsetWidth}" step="20"><input class="prop-input" id="ph" type="number" value="${selectedElement.offsetHeight}" step="20"></div></div>`;
+  h += `<div class="prop-group"><div class="prop-label">Size (px, %, auto)</div>
+          <div class="prop-row" style="margin-bottom:8px">
+            <input class="prop-input" id="pw" type="text" placeholder="W" value="${selectedElement.style.width || selectedElement.offsetWidth+'px'}">
+            <input class="prop-input" id="ph" type="text" placeholder="H" value="${selectedElement.style.height || selectedElement.offsetHeight+'px'}">
+          </div>
+          <div class="prop-row">
+            <input class="prop-input" id="pmaxw" type="text" placeholder="Max-W" value="${selectedElement.style.maxWidth || ''}">
+            <label style="font-size:0.8rem;color:#e4e4e7;display:flex;align-items:center;gap:6px;width:100%;"><input type="checkbox" id="pmxauto" ${selectedElement.style.marginLeft==='auto'&&selectedElement.style.marginRight==='auto'?'checked':''}> Center Box</label>
+          </div>
+        </div>`;
 
   // Section / Container specific
   if (isSection || isContainer) {
     const cs = getComputedStyle(selectedElement);
-    h += `<div class="prop-group"><div class="prop-label">Background</div><div class="prop-row"><input type="color" class="prop-color-input" id="psc" value="${rgbHex(cs.backgroundColor)}"><input class="prop-input" id="psch" value="${rgbHex(cs.backgroundColor)}"></div></div>`;
-    h += `<div class="prop-group"><div class="prop-label">Padding (px)</div><input class="prop-input" id="pspad" type="number" value="${parseInt(cs.paddingLeft)||0}"></div>`;
-    h += `<div class="prop-group"><div class="prop-label">Border Radius</div><input class="prop-input" id="psbr" type="number" value="${parseInt(cs.borderRadius)||8}"></div>`;
+    const disp = selectedElement.style.display || cs.display;
+    
+    h += `<div class="prop-group"><div class="prop-label">Layout</div>
+            <select class="prop-input" id="p-disp" style="margin-bottom:8px">
+              <option value="block" ${disp==='block'?'selected':''}>Block (Free)</option>
+              <option value="flex" ${disp==='flex'?'selected':''}>Flex</option>
+              <option value="grid" ${disp==='grid'?'selected':''}>Grid</option>
+            </select>`;
+    
+    if (disp === 'flex') {
+      const fd = selectedElement.style.flexDirection || cs.flexDirection;
+      const jc = selectedElement.style.justifyContent || cs.justifyContent;
+      const ai = selectedElement.style.alignItems || cs.alignItems;
+      h += `<div class="prop-row" style="margin-bottom:8px">
+              <select class="prop-input" id="p-fdir"><option value="row" ${fd==='row'?'selected':''}>Row</option><option value="column" ${fd==='column'?'selected':''}>Column</option></select>
+            </div>
+            <div class="prop-row" style="margin-top:8px">
+              <select class="prop-input" id="p-jc"><option value="flex-start" ${jc==='flex-start'?'selected':''}>Start</option><option value="center" ${jc==='center'?'selected':''}>Center</option><option value="space-between" ${jc==='space-between'?'selected':''}>Spc Btn</option></select>
+            </div>
+            <div class="prop-row" style="margin-top:8px">
+              <select class="prop-input" id="p-ai"><option value="flex-start" ${ai==='flex-start'?'selected':''}>Start</option><option value="center" ${ai==='center'?'selected':''}>Center</option><option value="stretch" ${ai==='stretch'?'selected':''}>Stretch</option></select>
+            </div>`;
+    } else if (disp === 'grid') {
+      const cols = (selectedElement.style.gridTemplateColumns || cs.gridTemplateColumns).split(' ').length || 2;
+      h += `<div class="prop-row" style="margin-top:8px"><input class="prop-input" id="p-gcol" type="number" min="1" max="12" value="${cols}"> <span style="font-size:0.75rem;color:#a1a1aa;align-self:center;">Columns</span></div>`;
+    }
+    h += `</div>`;
+
+    h += `<div class="prop-group"><div class="prop-label">Padding & Margin</div>
+            <div class="prop-row" style="margin-bottom:8px">
+              <input class="prop-input" id="p-ptop" type="text" placeholder="P-Top" value="${selectedElement.style.paddingTop || cs.paddingTop}">
+              <input class="prop-input" id="p-prgt" type="text" placeholder="P-Right" value="${selectedElement.style.paddingRight || cs.paddingRight}">
+            </div>
+            <div class="prop-row" style="margin-bottom:8px">
+              <input class="prop-input" id="p-pbot" type="text" placeholder="P-Bot" value="${selectedElement.style.paddingBottom || cs.paddingBottom}">
+              <input class="prop-input" id="p-plft" type="text" placeholder="P-Left" value="${selectedElement.style.paddingLeft || cs.paddingLeft}">
+            </div>
+            <div class="prop-row" style="margin-bottom:8px">
+              <input class="prop-input" id="p-mtop" type="text" placeholder="M-Top" value="${selectedElement.style.marginTop || cs.marginTop}">
+              <input class="prop-input" id="p-mrgt" type="text" placeholder="M-Right" value="${selectedElement.style.marginRight || cs.marginRight}">
+            </div>
+            <div class="prop-row">
+              <input class="prop-input" id="p-mbot" type="text" placeholder="M-Bot" value="${selectedElement.style.marginBottom || cs.marginBottom}">
+              <input class="prop-input" id="p-mlft" type="text" placeholder="M-Left" value="${selectedElement.style.marginLeft || cs.marginLeft}">
+            </div>
+          </div>`;
+
+    h += `<div class="prop-group"><div class="prop-label">Background</div>
+            <div class="prop-row" style="margin-bottom:8px"><input type="color" class="prop-color-input" id="psc" value="${rgbHex(selectedElement.style.backgroundColor || cs.backgroundColor)}"><input class="prop-input" id="psch" value="${rgbHex(selectedElement.style.backgroundColor || cs.backgroundColor)}"></div>
+            <div class="prop-row"><input class="prop-input" id="p-bgimg" type="text" placeholder="Image URL (e.g. url(...))" value="${(selectedElement.style.backgroundImage || cs.backgroundImage).replace(/"/g, '&quot;')}"></div>
+          </div>`;
+
+    h += `<div class="prop-group"><div class="prop-label">Borders</div>
+            <div class="prop-row" style="margin-bottom:8px"><input class="prop-input" id="psbr" type="text" placeholder="Radius (e.g. 8px)" value="${selectedElement.style.borderRadius || cs.borderRadius}"></div>
+            <div class="prop-row">
+              <input class="prop-input" id="p-bdw" type="text" placeholder="Width" value="${selectedElement.style.borderWidth || cs.borderWidth}">
+              <input type="color" class="prop-color-input" id="p-bdc" value="${rgbHex(selectedElement.style.borderColor || cs.borderColor)}">
+            </div>
+          </div>`;
+
     const childCount = selectedElement.querySelectorAll(':scope > .element').length;
     h += `<div class="prop-group"><div class="prop-label">Children</div><p style="font-size:.75rem;color:#6b6b78">${childCount} nested element${childCount !== 1 ? 's' : ''}</p></div>`;
   }
@@ -326,9 +481,31 @@ function updatePropertiesPanel() {
   }
   if (btnEl) {
     h += `<div class="prop-group"><div class="prop-label">Label</div><input class="prop-input" id="pbl" value="${btnEl.innerText.replace(/"/g,'&quot;')}"></div>`;
-    h += `<div class="prop-group"><div class="prop-label">Alert</div><input class="prop-input" id="pba" value="${(btnEl.getAttribute('data-alert')||'').replace(/"/g,'&quot;')}"></div>`;
+    h += `<div class="prop-group"><div class="prop-label">Alert Action</div><input class="prop-input" id="pba" placeholder="Optional" value="${(btnEl.getAttribute('data-alert')||'').replace(/"/g,'&quot;')}"></div>`;
+    h += `<div class="prop-group"><div class="prop-label">Action Type</div><select class="prop-input" id="pbty"><option value="button" ${btnEl.type!=='submit'?'selected':''}>Normal Button</option><option value="submit" ${btnEl.type==='submit'?'selected':''}>Submit Form</option></select></div>`;
   }
-  if (imgEl) { h += `<div class="prop-group"><div class="prop-label">Source</div><input class="prop-input" id="pis" value="${imgEl.src.length>80?'base64':imgEl.src}"></div>`; }
+  if (imgEl) { h += `<div class="prop-group"><div class="prop-label">Source</div><div class="prop-row"><input class="prop-input" id="pis" value="${imgEl.src.length>80?'base64':imgEl.src}"><button id="pimg-btn" class="prop-input" style="width:auto;cursor:pointer;background:rgba(108,99,255,0.1);color:#a78bfa;border-color:rgba(108,99,255,0.3);padding:7px 12px;font-weight:600;">Upload</button></div></div>`; }
+
+  const inputEl = selectedElement.querySelector(':scope > input');
+  const textareaEl = selectedElement.querySelector(':scope > textarea');
+  const labelEl = selectedElement.querySelector(':scope > label');
+  
+  if (inputEl) {
+    h += `<div class="prop-group"><div class="prop-label">Placeholder</div><input class="prop-input" id="pinpph" value="${inputEl.placeholder?inputEl.placeholder.replace(/"/g,'&quot;'):''}"></div>`;
+    h += `<div class="prop-group"><div class="prop-label">Input Type</div><select class="prop-input" id="pinpty"><option value="text" ${!inputEl.type||inputEl.type==='text'?'selected':''}>Text</option><option value="email" ${inputEl.type==='email'?'selected':''}>Email</option><option value="password" ${inputEl.type==='password'?'selected':''}>Password</option></select></div>`;
+  }
+  if (textareaEl) {
+    h += `<div class="prop-group"><div class="prop-label">Placeholder</div><input class="prop-input" id="ptaph" value="${textareaEl.placeholder?textareaEl.placeholder.replace(/"/g,'&quot;'):''}"></div>`;
+  }
+  if (inputEl || textareaEl) {
+    const ctrl = inputEl || textareaEl;
+    h += `<div class="prop-group"><div class="prop-label">Element ID</div><input class="prop-input" id="pelid" placeholder="my-input" value="${ctrl.id}"></div>`;
+    h += `<div class="prop-group"><div class="prop-label">Validation</div><label style="font-size:0.8rem;color:#e4e4e7;display:flex;align-items:center;gap:6px"><input type="checkbox" id="preq" ${ctrl.required?'checked':''}> Required Field</label></div>`;
+  }
+  if (labelEl) {
+    h += `<div class="prop-group"><div class="prop-label">Text</div><input class="prop-input" id="plbltxt" value="${labelEl.innerText.replace(/"/g,'&quot;')}"></div>`;
+    h += `<div class="prop-group"><div class="prop-label">For (Input ID)</div><input class="prop-input" id="plblfor" placeholder="my-input" value="${labelEl.htmlFor}"></div>`;
+  }
 
   propsBody.innerHTML = h; bindProps();
 }
@@ -336,8 +513,17 @@ function bindProps() {
   const b = (id, fn) => { const e = document.getElementById(id); if (e) { e.addEventListener('input', fn); e.addEventListener('mousedown', ev => ev.stopPropagation()); } };
   b('px', e => { if (selectedElement) { selectedElement.style.left = e.target.value + 'px'; updateFloatingToolbar(); } });
   b('py', e => { if (selectedElement) { selectedElement.style.top = e.target.value + 'px'; updateFloatingToolbar(); } });
-  b('pw', e => { if (selectedElement) selectedElement.style.width = e.target.value + 'px'; });
-  b('ph', e => { if (selectedElement) selectedElement.style.height = e.target.value + 'px'; });
+  b('pw', e => { if (selectedElement) { let v = e.target.value; if(v && !isNaN(v)) v+='px'; selectedElement.style.width = v; } });
+  b('ph', e => { if (selectedElement) { let v = e.target.value; if(v && !isNaN(v)) v+='px'; selectedElement.style.height = v; } });
+  b('pmaxw', e => { if (selectedElement) { let v = e.target.value; if(v && !isNaN(v)) v+='px'; selectedElement.style.maxWidth = v; } });
+  const pmxauto = document.getElementById('pmxauto');
+  if (pmxauto) pmxauto.addEventListener('change', e => { 
+    if (selectedElement) { 
+      if (e.target.checked) { selectedElement.style.marginLeft = 'auto'; selectedElement.style.marginRight = 'auto'; } 
+      else { selectedElement.style.marginLeft = '0'; selectedElement.style.marginRight = '0'; } 
+      saveState(); 
+    } 
+  });
   b('pt', e => { const t = selectedElement?.querySelector('.text-content'); if (t) t.innerText = e.target.value; });
   b('pfs', e => { const t = selectedElement?.querySelector('.text-content'); if (t) t.style.fontSize = e.target.value + 'px'; });
   b('pc', e => { const t = selectedElement?.querySelector('.text-content'); if (t) t.style.color = e.target.value; const h = document.getElementById('pch'); if (h) h.value = e.target.value; });
@@ -345,11 +531,50 @@ function bindProps() {
   b('pbl', e => { const b = selectedElement?.querySelector('button'); if (b) b.innerText = e.target.value; });
   b('pba', e => { const b = selectedElement?.querySelector('button'); if (b) b.setAttribute('data-alert', e.target.value); });
   b('pis', e => { const i = selectedElement?.querySelector('img'); if (i && e.target.value !== 'base64') i.src = e.target.value; });
+  const pimgBtn = document.getElementById('pimg-btn');
+  if (pimgBtn) pimgBtn.addEventListener('click', () => { currentImageUploadTarget = selectedElement?.querySelector('img'); imageUpload.click(); });
+  
+  b('pinpph', e => { const i = selectedElement?.querySelector('input'); if (i) i.placeholder = e.target.value; });
+  b('pinpty', e => { const i = selectedElement?.querySelector('input'); if (i) i.type = e.target.value; });
+  b('ptaph', e => { const t = selectedElement?.querySelector('textarea'); if (t) t.placeholder = e.target.value; });
+  b('pelid', e => { const c = selectedElement?.querySelector('input, textarea'); if (c) c.id = e.target.value; });
+  const preq = document.getElementById('preq');
+  if (preq) preq.addEventListener('change', e => { const c = selectedElement?.querySelector('input, textarea'); if (c) c.required = e.target.checked; saveState(); });
+  b('plbltxt', e => { const l = selectedElement?.querySelector('label'); if (l) l.innerText = e.target.value; });
+  b('plblfor', e => { const l = selectedElement?.querySelector('label'); if (l) l.htmlFor = e.target.value; });
+
   // Section/Container props
   b('psc', e => { if (selectedElement) selectedElement.style.backgroundColor = e.target.value; const h = document.getElementById('psch'); if (h) h.value = e.target.value; });
   b('psch', e => { if (selectedElement) selectedElement.style.backgroundColor = e.target.value; const p = document.getElementById('psc'); if (p) p.value = e.target.value; });
-  b('pspad', e => { if (selectedElement) selectedElement.style.padding = e.target.value + 'px'; });
-  b('psbr', e => { if (selectedElement) selectedElement.style.borderRadius = e.target.value + 'px'; });
+  b('p-bgimg', e => { if (selectedElement) { let v = e.target.value; if(v && !v.startsWith('url(')) v = `url(${v})`; selectedElement.style.backgroundImage = v; selectedElement.style.backgroundSize = 'cover'; } });
+  b('psbr', e => { if (selectedElement) { let v = e.target.value; if(v && !isNaN(v)) v+='px'; selectedElement.style.borderRadius = v; } });
+  b('p-bdw', e => { if (selectedElement) { let v = e.target.value; if(v && !isNaN(v)) v+='px'; selectedElement.style.borderWidth = v; selectedElement.style.borderStyle = 'solid'; } });
+  b('p-bdc', e => { if (selectedElement) { selectedElement.style.borderColor = e.target.value; selectedElement.style.borderStyle = 'solid'; } });
+
+  b('p-disp', e => { 
+    if (selectedElement) { 
+      const disp = e.target.value; selectedElement.style.display = disp; 
+      if(disp==='grid') selectedElement.style.gridTemplateColumns = 'repeat(2, 1fr)'; 
+      Array.from(selectedElement.children).forEach(c => {
+        if(c.classList.contains('element')) { c.style.position = disp === 'block' ? 'absolute' : 'relative'; if(disp !== 'block') { c.style.left = '0'; c.style.top = '0'; } }
+      });
+      updatePropertiesPanel(); 
+    } 
+  });
+  b('p-fdir', e => { if (selectedElement) selectedElement.style.flexDirection = e.target.value; });
+  b('p-jc', e => { if (selectedElement) selectedElement.style.justifyContent = e.target.value; });
+  b('p-ai', e => { if (selectedElement) selectedElement.style.alignItems = e.target.value; });
+  b('p-gcol', e => { if (selectedElement) selectedElement.style.gridTemplateColumns = `repeat(${e.target.value}, 1fr)`; });
+
+  b('p-ptop', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.paddingTop = v; } });
+  b('p-prgt', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.paddingRight = v; } });
+  b('p-pbot', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.paddingBottom = v; } });
+  b('p-plft', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.paddingLeft = v; } });
+
+  b('p-mtop', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.marginTop = v; } });
+  b('p-mrgt', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.marginRight = v; } });
+  b('p-mbot', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.marginBottom = v; } });
+  b('p-mlft', e => { if (selectedElement) { let v=e.target.value; if(v&&!isNaN(v)) v+='px'; selectedElement.style.marginLeft = v; } });
   document.querySelectorAll('.prop-input,.prop-color-input').forEach(i => i.addEventListener('change', () => saveState()));
 }
 function rgbHex(rgb) { if (rgb.startsWith('#')) return rgb; const m = rgb.match(/\d+/g); if (!m||m.length<3) return '#000000'; return '#' + m.slice(0,3).map(n=>parseInt(n).toString(16).padStart(2,'0')).join(''); }
@@ -401,28 +626,114 @@ document.getElementById('btn-preview').addEventListener('click', () => { documen
 document.getElementById('exit-preview').addEventListener('click', () => { document.body.classList.remove('preview-mode'); document.getElementById('exit-preview').style.display = 'none'; });
 
 // ========== EXPORT ==========
-function genExport() {
+function genExportHTML() {
   const c = canvas.cloneNode(true);
   c.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  const empty = c.querySelector('#empty-state');
+  if (empty) empty.remove();
+  const ftbar = c.querySelector('#floating-toolbar');
+  if (ftbar) ftbar.remove();
+
+  const elements = c.querySelectorAll('.element');
+  if (elements.length === 0 && !c.style.backgroundImage) {
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Empty Site</title></head><body style="margin:0;padding:0;background:#fff;"></body></html>`;
+  }
+
   c.querySelectorAll('.element').forEach(el => {
     el.removeAttribute('draggable'); el.style.cursor = 'default'; el.classList.remove('selected');
     const t = el.querySelector('.text-content'); if (t) { t.removeAttribute('contenteditable'); t.classList.remove('editing'); t.style.cursor = 'inherit'; }
     const sl = el.querySelector('.section-label,.container-label'); if (sl) sl.remove();
     if (el.classList.contains('el-section') || el.classList.contains('el-container')) { el.style.border = 'none'; el.style.background = 'transparent'; }
   });
-  const css = `body{font-family:'Inter',sans-serif;margin:0;padding:20px;background:#f0f2f5}.canvas{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.05)}.element{position:absolute;border-radius:4px}.element button{padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:1rem;font-weight:500;width:100%;height:100%;cursor:pointer}.element img{width:100%;height:100%;object-fit:contain;display:block}.element .text-content,.element div{padding:4px;font-size:1rem;line-height:1.5;width:100%;height:100%;word-wrap:break-word}.element form{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;background:#fff;padding:15px;border-radius:8px;border:1px solid #e5e7eb}.element input[type="text"]{padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;width:100%;font-family:inherit;font-size:.95rem}.element input[type="submit"]{padding:10px 12px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-family:inherit;font-size:.95rem}`;
-  const sc = `<script>document.querySelectorAll('button[data-alert]').forEach(b=>b.addEventListener('click',()=>alert(b.getAttribute('data-alert'))));<\/script>`;
-  return new Blob([`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>My Website</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>${css}</style></head><body>${c.outerHTML}${sc}</body></html>`], {type:'text/html'});
+  const css = `body{font-family:'Inter',sans-serif;margin:0;padding:0;background:#f0f2f5}.canvas{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#fff;}.element{position:absolute;border-radius:4px;box-sizing:border-box}.element button{padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:1rem;font-weight:500;width:100%;height:100%;cursor:pointer}.element img{width:100%;height:100%;object-fit:contain;display:block}.element .text-content,.element div{padding:4px;font-size:1rem;line-height:1.5;width:100%;height:100%;word-wrap:break-word}.element form{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;background:#fff;padding:15px;border-radius:8px;border:1px solid #e5e7eb}.element input, .element textarea{padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;width:100%;height:100%;font-family:inherit;font-size:.95rem;box-sizing:border-box}`;
+  const sc = `<script>
+      document.querySelectorAll('button[data-alert]').forEach(b=>b.addEventListener('click',()=>alert(b.getAttribute('data-alert'))));
+      document.querySelectorAll('.el-form').forEach(f=>f.addEventListener('submit',e=>{e.preventDefault();alert('Form Submitted Successfully! ✅');}));
+    <\/script>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Deployed Site</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>${css}</style></head><body>${c.outerHTML}${sc}</body></html>`;
 }
+function genExport() { return new Blob([genExportHTML()], {type:'text/html'}); }
 document.getElementById('btn-download').addEventListener('click', () => {
   if (selectedElement) selectElement(null);
   const a = document.createElement('a'); a.href = URL.createObjectURL(genExport()); a.download = 'my-website.html'; a.click(); URL.revokeObjectURL(a.href);
   showToast('Exported successfully! 📦');
 });
+function showDeployModal() {
+  let modal = document.getElementById('deploy-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'deploy-modal';
+    modal.className = 'tpl-modal';
+    
+    modal.innerHTML = `
+      <div class="tpl-modal-card" style="text-align: center; max-width: 420px; padding: 40px 32px;">
+        <div style="font-size: 3.5rem; margin-bottom: 20px; animation: fadeUp 0.5s ease;">🚀</div>
+        <h3 style="font-size:1.5rem; margin-bottom: 12px; color:#fff; font-weight:700;">Your website is live!</h3>
+        <p style="font-size:0.95rem; color:#a1a1aa; margin-bottom: 30px; line-height:1.5;">Anyone can now access your site using this link:</p>
+        
+        <div style="display:flex; align-items:center; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:6px; margin-bottom:32px; transition:border-color 0.2s;">
+          <input type="text" id="deploy-url" readonly style="flex:1; background:transparent; border:none; color:#e4e4e7; font-family:'Inter',sans-serif; font-size:0.9rem; outline:none; padding-left:12px; min-width:0;">
+          <button id="btn-copy-url" style="background:rgba(108,99,255,0.15); color:#a78bfa; border:none; border-radius:8px; padding:8px 16px; font-weight:600; cursor:pointer; font-size:0.85rem; transition:all 0.2s;">Copy</button>
+        </div>
+        
+        <div class="tpl-modal-actions" style="justify-content: center;">
+          <button id="btn-close-deploy" style="background:linear-gradient(135deg,#6c63ff,#4f46e5); color:#fff; border:none; border-radius:10px; padding:12px 32px; font-weight:600; cursor:pointer; font-size:1rem; width:100%; box-shadow:0 4px 20px rgba(108,99,255,0.3); transition:all 0.2s;">Done</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const copyBtn = document.getElementById('btn-copy-url');
+    copyBtn.addEventListener('click', () => {
+      const urlInput = document.getElementById('deploy-url');
+      urlInput.select();
+      navigator.clipboard.writeText(urlInput.value).catch(err => {
+        // Fallback
+        document.execCommand('copy');
+      });
+      copyBtn.innerText = 'Copied!';
+      copyBtn.style.background = 'rgba(16,185,129,0.15)';
+      copyBtn.style.color = '#10b981';
+      setTimeout(() => {
+        copyBtn.innerText = 'Copy';
+        copyBtn.style.background = 'rgba(108,99,255,0.15)';
+        copyBtn.style.color = '#a78bfa';
+      }, 2000);
+      showToast('URL Copied! 🔗');
+    });
+
+    document.getElementById('btn-close-deploy').addEventListener('click', () => {
+      modal.classList.remove('open');
+      const html = genExportHTML();
+      // Use window.open() to create a new tab
+      const newWin = window.open('', '_blank');
+      if (newWin) {
+        // Write the canvas content into the new tab document
+        newWin.document.open();
+        newWin.document.write(html);
+        newWin.document.close();
+      } else {
+        // Auto Redirect Alternative: If new tab is not used (blocked), replace current page content with the built site
+        document.open();
+        document.write(html);
+        document.close();
+      }
+    });
+    
+    const closeBtn = document.getElementById('btn-close-deploy');
+    closeBtn.addEventListener('mouseover', () => closeBtn.style.transform = 'translateY(-2px)');
+    closeBtn.addEventListener('mouseout', () => closeBtn.style.transform = 'translateY(0)');
+  }
+  
+  const randNum = Math.floor(Math.random() * 900) + 100;
+  document.getElementById('deploy-url').value = `https://designdropx.site/demo${randNum}`;
+  
+  modal.classList.add('open');
+}
+
 document.getElementById('btn-deploy').addEventListener('click', () => {
   if (selectedElement) selectElement(null);
-  window.open(URL.createObjectURL(genExport()), '_blank');
-  showToast('Deployed successfully! 🚀');
+  showDeployModal();
 });
 
 // ========== PARTICLES + IDLE ==========

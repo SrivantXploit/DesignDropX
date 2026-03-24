@@ -14,33 +14,90 @@
   <div class="grid-overlay"></div>
 
   <div class="login-container">
-    <div class="login-card">
+    <div class="login-card" style="position:relative;">
+      <a href="index.html" style="position:absolute; top:20px; left:20px; color:#a1a1aa; text-decoration:none; display:flex; align-items:center; gap:5px; font-size:0.85rem; font-weight:500; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Back
+      </a>
       <div class="logo-mark">DX</div>
       <h1>DesignDropX</h1>
       <p class="subtitle">No-code builder for the future</p>
-      <form id="login-form">
+      <div id="login-form" class="form-wrapper">
         <div class="field">
           <label>Email</label>
-          <input type="email" id="email" placeholder="you@example.com" required>
+          <input type="email" id="emailInput" placeholder="you@example.com" required>
         </div>
         <div class="field">
           <label>Password</label>
-          <input type="password" id="password" placeholder="••••••••" required>
+          <input type="password" id="passwordInput" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="btn-submit">
-          <span class="btn-text">Launch Builder →</span>
-          <span class="btn-loader" style="display:none;"></span>
-        </button>
-      </form>
-      <p class="hint">Enter any credentials to continue</p>
+        <div style="display:flex;gap:10px;">
+          <button type="button" id="loginBtn" class="btn-submit" style="flex:1; pointer-events: auto; z-index: 10;">
+            <span class="btn-text">Log In</span>
+            <span class="btn-loader" style="display:none;"></span>
+          </button>
+          <button type="button" id="signupBtn" class="btn-submit" style="flex:1;background:rgba(108,99,255,0.1);color:#6c63ff;border:1px solid rgba(108,99,255,0.2); pointer-events: auto; z-index: 10;">
+            <span class="btn-text">Sign Up</span>
+            <span class="btn-loader" style="display:none;"></span>
+          </button>
+        </div>
+        </div>
+        <div class="divider" style="display:flex;align-items:center;text-align:center;margin:20px 0;color:#a1a1aa;font-size:0.85rem;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="padding:0 10px;">Or continue with</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:15px;">
+          <button type="button" id="googleBtn" class="btn-submit" style="flex:1;background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;gap:8px; pointer-events: auto; z-index: 10;">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <span class="btn-text">Google</span>
+          </button>
+          <button type="button" id="githubBtn" class="btn-submit" style="flex:1;background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;gap:8px; pointer-events: auto; z-index: 10;">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path></svg>
+            <span class="btn-text">GitHub</span>
+          </button>
+        </div>
+        <p id="auth-msg" style="text-align:center;font-size:0.85rem;margin-top:15px;display:none;font-weight:500;"></p>
+      </div>
+      <p class="hint">Create an account or login to continue.</p>
     </div>
   </div>
   <script>
-    document.getElementById('login-form').addEventListener('submit', e => {
-      e.preventDefault();
-      document.querySelector('.btn-text').style.display = 'none';
-      document.querySelector('.btn-loader').style.display = 'block';
-      setTimeout(() => window.location.href = 'builder.html', 800);
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("JS Loaded");
+
+      if (localStorage.getItem("loggedIn") === "true") {
+        window.location.href = 'builder.html';
+      }
+
+      const emailInput = document.getElementById("emailInput");
+      const passwordInput = document.getElementById("passwordInput");
+      const loginBtn = document.getElementById("loginBtn");
+      const signupBtn = document.getElementById("signupBtn");
+      const googleBtn = document.getElementById("googleBtn");
+      const githubBtn = document.getElementById("githubBtn");
+
+      function login() {
+        console.log("Login clicked");
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        
+        if (email === "admin" && password === "1234") {
+          localStorage.setItem("loggedIn", "true");
+          alert("Login success");
+          window.location.href = 'builder.html';
+        } else {
+          alert("Invalid credentials");
+        }
+      }
+
+      function unhandled() {
+        alert("Local dev mode: Use Admin username/password to login");
+      }
+
+      loginBtn.addEventListener("click", login);
+      signupBtn.addEventListener("click", unhandled);
+      googleBtn.addEventListener("click", unhandled);
+      githubBtn.addEventListener("click", unhandled);
     });
   </script>
 </body>
