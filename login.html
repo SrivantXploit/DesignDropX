@@ -21,7 +21,7 @@
       <div class="logo-mark">DX</div>
       <h1>DesignDropX</h1>
       <p class="subtitle">No-code builder for the future</p>
-      <div id="login-form" class="form-wrapper">
+      <form id="login-form" class="form-wrapper">
         <div class="field">
           <label>Email</label>
           <input type="email" id="emailInput" placeholder="you@example.com" required>
@@ -57,7 +57,7 @@
           </button>
         </div>
         <p id="auth-msg" style="text-align:center;font-size:0.85rem;margin-top:15px;display:none;font-weight:500;"></p>
-      </div>
+      </form>
       <p class="hint">Create an account or login to continue.</p>
     </div>
   </div>
@@ -70,13 +70,13 @@
       const { data: { session } } = await supabaseClient.auth.getSession();
       console.log("Session:", session);
       if (session) {
-        window.location.href = 'builder.html';
+        window.location.href = 'onboarding.html';
       }
 
       supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN') {
           console.log("Session:", session);
-          window.location.href = 'builder.html';
+          window.location.href = 'onboarding.html';
         }
       });
 
@@ -114,7 +114,7 @@
           loginBtn.innerHTML = '<span class="btn-text">Log In</span>';
           loginBtn.style.pointerEvents = 'auto';
         } else {
-          window.location.href = 'builder.html';
+          window.location.href = 'onboarding.html';
         }
       }
 
@@ -171,7 +171,7 @@
           msg.style.color = "#10b981";
           msg.innerText = "Sign up successful! You can now log in.";
           if (data.session) {
-             window.location.href = 'builder.html';
+             window.location.href = 'onboarding.html';
              return;
           }
         }

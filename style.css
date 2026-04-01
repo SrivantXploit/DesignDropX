@@ -384,3 +384,239 @@ body.preview-mode .ai-toggle,body.preview-mode .ai-panel{display:none!important}
 .tpl-modal-card p{font-size:.78rem;color:#6b6b78;margin-bottom:18px;line-height:1.5}
 .tpl-modal-actions{display:flex;gap:8px;justify-content:flex-end}
 
+/* =========== BUILDER MICRO-IMPROVEMENTS =========== */
+
+/* Navbar subtle glow line */
+.navbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(108,99,255,0.3), transparent);
+  pointer-events: none;
+}
+
+/* Canvas workspace grid-dot background */
+.canvas-wrap {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-color: #f4f4f5;
+}
+
+/* Sidebar smoother item transitions */
+.sb-item {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sb-item:hover {
+  transform: translateX(2px);
+}
+
+/* Properties panel section improvements */
+.prop-group {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.prop-group:last-child {
+  border-bottom: none;
+}
+.prop-label {
+  margin-bottom: 7px;
+}
+
+/* Uniform button hover lift */
+.nb {
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nb:hover {
+  transform: translateY(-1px);
+}
+
+/* Slightly enhanced sidebar/props backdrop */
+.sidebar, .props {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Layer items smoother transitions */
+.layer-item {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.layer-item:hover {
+  transform: translateX(2px);
+}
+
+/* Template card improvements */
+.tpl-card {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tpl-card:hover {
+  transform: translateX(2px);
+}
+
+/* Canvas element smoother selection */
+.element {
+  transition: outline 0.15s, box-shadow 0.2s, transform 0.15s;
+}
+
+/* Toast micro-polish */
+.toast {
+  border-radius: 12px;
+  box-shadow: 0 0 24px rgba(108,99,255,0.12), 0 12px 32px rgba(0,0,0,0.5);
+}
+
+/* AI toggle breathing animation enhancement */
+.ai-toggle {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Selected element enhanced glow */
+.element.selected {
+  box-shadow: 0 0 0 4px rgba(108,99,255,0.12), 0 0 20px rgba(108,99,255,0.06);
+}
+
+/* Floating toolbar smoother entry */
+.ftbar {
+  transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(4px);
+}
+.ftbar.active {
+  transform: translateY(0);
+}
+
+/* Project name in navbar — enhanced styling */
+.nav-project {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-project:hover {
+  background: rgba(108,99,255,0.04);
+}
+
+/* =========== DEVICE SWITCHER =========== */
+.device-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 2px;
+}
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #6b6b78;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: 'Inter', sans-serif;
+}
+.ds-btn:hover {
+  color: #e4e4e7;
+  background: rgba(255,255,255,0.04);
+}
+.ds-btn.active {
+  color: #fff;
+  background: rgba(108,99,255,0.2);
+  box-shadow: 0 0 8px rgba(108,99,255,0.15);
+}
+.ds-btn svg {
+  flex-shrink: 0;
+}
+.ds-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #4a4a56;
+  letter-spacing: 0.5px;
+  margin-left: 4px;
+  min-width: 38px;
+  text-align: center;
+}
+
+/* =========== RESPONSIVE CANVAS =========== */
+.canvas-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.canvas {
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  min-height: calc(100vh - 128px);
+}
+
+/* Device width modes */
+.canvas-wrap.device-desktop .canvas {
+  width: 100%;
+}
+.canvas-wrap.device-tablet .canvas {
+  width: 768px;
+  max-width: 768px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 10px 40px rgba(0,0,0,.06);
+  border-radius: 12px;
+}
+.canvas-wrap.device-mobile .canvas {
+  width: 375px;
+  max-width: 375px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 10px 40px rgba(0,0,0,.06);
+  border-radius: 16px;
+}
+
+/* Mobile / tablet frame hint */
+.canvas-wrap.device-tablet,
+.canvas-wrap.device-mobile {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* =========== CANVAS GRID TOGGLE =========== */
+.canvas.show-grid {
+  background-image: radial-gradient(circle, rgba(108,99,255,0.08) 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+}
+
+/* =========== TOGGLE LABEL =========== */
+.toggle-label {
+  font-size: 0.78rem;
+  color: #8b8b95;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.toggle-label:hover {
+  color: #e4e4e7;
+}
+.toggle-label input[type="checkbox"] {
+  accent-color: #6c63ff;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+/* =========== CANVAS PROPS SECTION =========== */
+#canvas-props {
+  padding: 10px;
+}
+#canvas-props .prop-group {
+  margin-bottom: 10px;
+}
+
+/* Preview mode: hide device switcher */
+body.preview-mode .device-switcher,
+body.preview-mode .ds-label {
+  display: none !important;
+}
+
+/* Hide grid */
+.canvas-wrap.no-grid {
+  background-image: none !important;
+}

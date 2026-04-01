@@ -105,10 +105,13 @@ function updateLayers() {
     const d = document.createElement('div');
     d.className = 'layer-item' + (el === selectedElement ? ' active' : '');
     let label = 'Element';
-    if (el.querySelector('.text-content')) label = 'Text';
+    if (el.querySelector('label')) label = 'Label';
+    else if (el.querySelector('textarea')) label = 'Textarea';
+    else if (el.querySelector('.text-content')) label = 'Text';
     else if (el.querySelector('button')) label = 'Button';
     else if (el.querySelector('img')) label = 'Image';
-    else if (el.querySelector('form')) label = 'Form';
+    else if (el.classList.contains('el-form')) label = 'Form';
+    else if (el.querySelector('input')) label = 'Input';
     else if (el.classList.contains('el-section')) label = 'Section';
     else if (el.classList.contains('el-container')) label = 'Container';
     d.textContent = `${label} ${i + 1}`;
@@ -161,10 +164,12 @@ function createElementOnCanvas(type, x, y) {
   el.style.left = `${x}px`; el.style.top = `${y}px`;
 
   if (type === 'text') {
+    el.style.width = '200px'; el.style.height = '40px';
     const t = document.createElement('div');
     t.classList.add('text-content'); t.contentEditable = 'false'; t.innerText = 'Edit this text';
     el.appendChild(t);
   } else if (type === 'button') {
+    el.style.width = '120px'; el.style.height = '45px';
     const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!');
     b.style.padding = '10px 20px';
     el.appendChild(b);
@@ -196,6 +201,7 @@ function createElementOnCanvas(type, x, y) {
     const lbl = document.createElement('span'); lbl.className = 'container-label'; lbl.textContent = 'Container';
     el.appendChild(lbl);
   } else if (type === 'label') {
+    el.style.width = '120px'; el.style.height = '30px';
     const lbl = document.createElement('label'); 
     lbl.classList.add('text-content'); lbl.contentEditable = 'false'; lbl.innerText = 'Field Label';
     lbl.style.display = 'block'; lbl.style.marginBottom = '5px'; lbl.style.fontWeight = '500'; lbl.style.fontSize = '14px';
@@ -227,8 +233,10 @@ function createElementInParent(type, x, y, parent) {
   el.style.left = `${x}px`; el.style.top = `${y}px`;
 
   if (type === 'text') {
+    el.style.width = '200px'; el.style.height = '40px';
     const t = document.createElement('div'); t.classList.add('text-content'); t.contentEditable = 'false'; t.innerText = 'Edit this text'; el.appendChild(t);
   } else if (type === 'button') {
+    el.style.width = '120px'; el.style.height = '45px';
     const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!'); 
     b.style.padding = '10px 20px'; el.appendChild(b);
   } else if (type === 'image') {
@@ -257,6 +265,7 @@ function createElementInParent(type, x, y, parent) {
     const lbl = document.createElement('span'); lbl.className = 'section-label'; lbl.textContent = 'Section';
     el.appendChild(lbl);
   } else if (type === 'label') {
+    el.style.width = '120px'; el.style.height = '30px';
     const lbl = document.createElement('label'); 
     lbl.classList.add('text-content'); lbl.contentEditable = 'false'; lbl.innerText = 'Field Label';
     lbl.style.display = 'block'; lbl.style.marginBottom = '5px'; lbl.style.fontWeight = '500'; lbl.style.fontSize = '14px';
@@ -1073,4 +1082,95 @@ bgUpload.addEventListener('change', function(e) {
 
   // Stop propagation so typing in AI input doesn't trigger builder shortcuts
   input.addEventListener('mousedown', e => e.stopPropagation());
+})();
+
+// ========== BUILDER MICRO-IMPROVEMENTS (Device Switcher & Canvas Props) ==========
+(function() {
+  // --- Device Switcher ---
+  const dsBtns = document.querySelectorAll('.ds-btn');
+  const dsLabel = document.getElementById('ds-label');
+  const canvasWrap = document.getElementById('canvas-wrapper');
+
+  dsBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Update active state
+      dsBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update canvas wrapper class for CSS responsive scaling
+      const device = btn.getAttribute('data-device');
+      canvasWrap.className = 'canvas-wrap'; // reset
+      if (device === 'desktop') {
+         canvasWrap.classList.add('device-desktop');
+         dsLabel.textContent = '100%';
+      } else if (device === 'tablet') {
+         canvasWrap.classList.add('device-tablet');
+         dsLabel.textContent = '768px';
+      } else if (device === 'mobile') {
+         canvasWrap.classList.add('device-mobile');
+         dsLabel.textContent = '375px';
+      }
+    });
+  });
+
+  // --- Canvas Properties ---
+  const bgColorInput = document.getElementById('canvas-bg-color');
+  const bgHexInput = document.getElementById('canvas-bg-hex');
+  const bgImgInput = document.getElementById('canvas-bg-img');
+  const gridToggle = document.getElementById('canvas-grid-toggle');
+  const bgResetBtn = document.getElementById('canvas-bg-reset');
+
+  if (bgColorInput && bgHexInput) {
+    bgColorInput.addEventListener('input', (e) => {
+      canvas.style.backgroundColor = e.target.value;
+      bgHexInput.value = e.target.value;
+      saveState();
+    });
+    bgHexInput.addEventListener('change', (e) => {
+      canvas.style.backgroundColor = e.target.value;
+      bgColorInput.value = rgbHex(e.target.value);
+      saveState();
+    });
+  }
+
+  if (bgImgInput) {
+    bgImgInput.addEventListener('change', (e) => {
+      let v = e.target.value;
+      if (v && !v.startsWith('url(')) v = "url('" + v + "')";
+      canvas.style.backgroundImage = v;
+      canvas.style.backgroundSize = 'cover';
+      canvas.style.backgroundPosition = 'center';
+      saveState();
+    });
+  }
+
+  if (gridToggle) {
+    gridToggle.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        canvasWrap.classList.remove('no-grid');
+      } else {
+        canvasWrap.classList.add('no-grid');
+      }
+    });
+  }
+
+  if (bgResetBtn) {
+    bgResetBtn.addEventListener('click', () => {
+      canvas.style.backgroundColor = '#ffffff';
+      canvas.style.backgroundImage = '';
+      if (bgColorInput) bgColorInput.value = '#ffffff';
+      if (bgHexInput) bgHexInput.value = '#ffffff';
+      if (bgImgInput) bgImgInput.value = '';
+      saveState();
+    });
+  }
+})();
+
+// ========== PROJECT NAME FROM ONBOARDING ==========
+(function() {
+  const savedName = localStorage.getItem('project_name');
+  const projectEl = document.querySelector('.nav-project');
+  if (savedName && projectEl) {
+    projectEl.textContent = savedName;
+  }
 })();

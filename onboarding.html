@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DesignDropX — Get Started</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-init.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        window.location.href = 'login.html';
+      }
+    });
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ob-bg: #08080c;
+      --ob-card: rgba(255,255,255,0.03);
+      --ob-border: rgba(108,99,255,0.15);
+      --ob-border-hover: rgba(108,99,255,0.4);
+      --ob-text: #e4e4e7;
+      --ob-text-dim: #71717a;
+      --ob-accent: #6c63ff;
+      --ob-accent-bright: #8b83ff;
+      --ob-blue: #3b82f6;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--ob-bg);
+      color: var(--ob-text);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Animated background orbs */
+    .ob-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      animation: ob-orbit 14s ease-in-out infinite alternate;
+    }
+    .ob-orb-1 { width: 500px; height: 500px; background: rgba(108,99,255,0.2); top: -12%; left: -8%; }
+    .ob-orb-2 { width: 350px; height: 350px; background: rgba(167,139,250,0.15); bottom: -10%; right: -6%; animation-delay: -7s; }
+    .ob-orb-3 { width: 250px; height: 250px; background: rgba(59,130,246,0.12); top: 40%; left: 55%; animation-delay: -3s; }
+    @keyframes ob-orbit { to { transform: translate(40px, -30px) scale(1.12); } }
+
+    /* Grid overlay */
+    .ob-grid {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Wizard container */
+    .ob-wizard {
+      position: relative; z-index: 2;
+      width: 100%; max-width: 680px;
+      padding: 24px;
+    }
+
+    /* Step panels */
+    .ob-step {
+      display: none;
+      animation: ob-fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .ob-step.active { display: block; }
+    @keyframes ob-fadeIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Glass card */
+    .ob-card {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+      border: 1px solid var(--ob-border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: 0 0 50px rgba(108,99,255,0.06), 0 24px 60px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    /* Close button */
+    .ob-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none; color: var(--ob-text-dim);
+      cursor: pointer; font-size: 1.2rem; padding: 6px 10px;
+      border-radius: 8px; transition: all 0.2s; z-index: 5;
+    }
+    .ob-close:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+    /* Progress dots */
+    .ob-progress {
+      display: flex; justify-content: center; gap: 8px;
+      margin-bottom: 32px;
+    }
+    .ob-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      transition: all 0.3s;
+    }
+    .ob-dot.active { background: var(--ob-accent); box-shadow: 0 0 10px rgba(108,99,255,0.4); }
+    .ob-dot.done { background: rgba(108,99,255,0.4); }
+
+    /* Step header */
+    .ob-title {
+      font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px;
+      margin-bottom: 8px; text-align: center;
+    }
+    .ob-subtitle {
+      font-size: 0.9rem; color: var(--ob-text-dim);
+      margin-bottom: 32px; text-align: center; line-height: 1.5;
+    }
+
+    /* ---- STEP 1: Get Started cards ---- */
+    .ob-options {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    }
+    .ob-option {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 28px 16px;
+      text-align: center; cursor: pointer;
+      transition: all 0.25s; position: relative;
+    }
+    .ob-option:hover {
+      background: rgba(108,99,255,0.06);
+      border-color: var(--ob-border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(108,99,255,0.1);
+    }
+    .ob-option-icon {
+      width: 56px; height: 56px; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 14px; font-size: 1.6rem;
+    }
+    .ob-option-icon.ai { background: rgba(108,99,255,0.12); }
+    .ob-option-icon.tpl { background: rgba(16,185,129,0.12); }
+    .ob-option-icon.blank { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.15); }
+    .ob-option h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
+    .ob-option p { font-size: 0.78rem; color: var(--ob-text-dim); line-height: 1.4; }
+    .ob-badge {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--ob-accent); color: #fff;
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .ob-badge.soon {
+      background: rgba(255,255,255,0.08); color: var(--ob-text-dim);
+    }
+
+    /* ---- STEP 2: Name Your Project ---- */
+    .ob-back {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: none; border: none; color: var(--ob-text-dim);
+      cursor: pointer; font-size: 0.85rem; font-weight: 500;
+      padding: 6px 0; margin-bottom: 20px; transition: color 0.2s;
+      font-family: var(--font);
+    }
+    .ob-back:hover { color: #fff; }
+
+    .ob-field { margin-bottom: 24px; }
+    .ob-field label {
+      display: block; font-size: 0.72rem; font-weight: 600;
+      color: var(--ob-text-dim); margin-bottom: 8px;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .ob-input {
+      width: 100%; padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; color: #fff;
+      font-family: var(--font); font-size: 0.95rem;
+      outline: none; transition: all 0.25s;
+    }
+    .ob-input:focus {
+      border-color: rgba(108,99,255,0.6);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.08), 0 0 16px rgba(108,99,255,0.06);
+    }
+    .ob-input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .ob-actions { display: flex; justify-content: flex-end; gap: 12px; }
+
+    .ob-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border: none; border-radius: 12px;
+      font-family: var(--font); font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
+    }
+    .ob-btn-primary {
+      background: linear-gradient(135deg, #6c63ff, #4f46e5); color: #fff;
+      box-shadow: 0 0 20px rgba(108,99,255,0.2);
+    }
+    .ob-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(108,99,255,0.35), 0 8px 24px rgba(108,99,255,0.2);
+    }
+    .ob-btn-primary:active { transform: translateY(0); }
+    .ob-btn-primary:disabled {
+      opacity: 0.4; cursor: not-allowed; transform: none;
+      box-shadow: none;
+    }
+
+    .ob-btn-ghost {
+      background: transparent; color: var(--ob-text-dim);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .ob-btn-ghost:hover { background: rgba(255,255,255,0.04); color: #fff; }
+
+    /* ---- STEP 3: Describe Your Site ---- */
+    .ob-textarea {
+      width: 100%; min-height: 100px; padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; color: #fff; resize: none;
+      font-family: var(--font); font-size: 0.95rem;
+      outline: none; transition: all 0.25s; line-height: 1.6;
+    }
+    .ob-textarea:focus {
+      border-color: rgba(108,99,255,0.6);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.08);
+    }
+    .ob-textarea::placeholder { color: rgba(255,255,255,0.2); }
+
+    .ob-counter {
+      text-align: right; font-size: 0.72rem; color: var(--ob-text-dim);
+      margin-top: 6px;
+    }
+
+    .ob-chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 16px; margin-bottom: 28px;
+    }
+    .ob-chip {
+      padding: 7px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; color: var(--ob-text-dim);
+      font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      font-family: var(--font);
+    }
+    .ob-chip:hover {
+      background: rgba(108,99,255,0.1);
+      border-color: rgba(108,99,255,0.3);
+      color: var(--ob-text);
+    }
+    .ob-chip.selected {
+      background: rgba(108,99,255,0.15);
+      border-color: var(--ob-accent);
+      color: #fff;
+    }
+
+    .ob-skip {
+      background: none; border: none; color: var(--ob-text-dim);
+      cursor: pointer; font-size: 0.82rem; font-weight: 500;
+      padding: 10px 16px; transition: color 0.2s;
+      font-family: var(--font);
+    }
+    .ob-skip:hover { color: #fff; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .ob-options { grid-template-columns: 1fr; }
+      .ob-card { padding: 28px 20px; }
+      .ob-title { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="ob-orb ob-orb-1"></div>
+  <div class="ob-orb ob-orb-2"></div>
+  <div class="ob-orb ob-orb-3"></div>
+  <div class="ob-grid"></div>
+
+  <div class="ob-wizard">
+    <!-- =============== STEP 1: Get Started =============== -->
+    <div class="ob-step active" id="step-1">
+      <div class="ob-card">
+        <a href="index.html" class="ob-close" title="Back to Home">✕</a>
+
+        <div class="ob-progress">
+          <div class="ob-dot active"></div>
+          <div class="ob-dot"></div>
+          <div class="ob-dot"></div>
+        </div>
+
+        <h2 class="ob-title">Select a way to get started</h2>
+        <p class="ob-subtitle">Choose how you'd like to build your site</p>
+
+        <div class="ob-options">
+          <div class="ob-option" data-choice="ai" id="opt-ai">
+            <span class="ob-badge soon">Coming Soon</span>
+            <div class="ob-option-icon ai">✨</div>
+            <h4>AI Site Builder</h4>
+            <p>Quickly generate a custom website with AI</p>
+          </div>
+          <div class="ob-option" data-choice="template" id="opt-template">
+            <span class="ob-badge soon">Coming Soon</span>
+            <div class="ob-option-icon tpl">🎨</div>
+            <h4>Template</h4>
+            <p>Start with a design that fits your needs</p>
+          </div>
+          <div class="ob-option" data-choice="blank" id="opt-blank">
+            <div class="ob-option-icon blank">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#71717a">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M12 8v8"/><path d="M8 12h8"/>
+              </svg>
+            </div>
+            <h4>Blank Site</h4>
+            <p>Build a custom site from scratch</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =============== STEP 2: Name Your Project =============== -->
+    <div class="ob-step" id="step-2">
+      <div class="ob-card">
+        <a href="index.html" class="ob-close" title="Back to Home">✕</a>
+
+        <div class="ob-progress">
+          <div class="ob-dot done"></div>
+          <div class="ob-dot active"></div>
+          <div class="ob-dot"></div>
+        </div>
+
+        <button class="ob-back" id="back-to-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
+
+        <h2 class="ob-title" style="text-align:left;">Name your site</h2>
+        <p class="ob-subtitle" style="text-align:left;">Give your project a name to get started</p>
+
+        <div class="ob-field">
+          <label for="project-name">Site name *</label>
+          <input type="text" id="project-name" class="ob-input" placeholder="My Awesome Website" maxlength="60" autofocus>
+        </div>
+
+        <div class="ob-actions">
+          <button class="ob-btn ob-btn-primary" id="btn-create" disabled>Create site</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =============== STEP 3: Describe Your Site =============== -->
+    <div class="ob-step" id="step-3">
+      <div class="ob-card">
+        <a href="index.html" class="ob-close" title="Back to Home">✕</a>
+
+        <div class="ob-progress">
+          <div class="ob-dot done"></div>
+          <div class="ob-dot done"></div>
+          <div class="ob-dot active"></div>
+        </div>
+
+        <button class="ob-back" id="back-to-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h2 class="ob-title" style="text-align:left;margin-bottom:4px;">Describe your site</h2>
+            <p class="ob-subtitle" style="text-align:left;margin-bottom:0;">Tell us what your site is about. This helps shape the experience.</p>
+          </div>
+          <span style="font-size:0.72rem;color:#4a4a56;white-space:nowrap;margin-left:12px;">Step 3 of 3</span>
+        </div>
+
+        <div class="ob-field" style="margin-top:24px;">
+          <textarea id="project-desc" class="ob-textarea" placeholder="Tell us what your site is all about. Include helpful information like the audience and goal." maxlength="500"></textarea>
+          <div class="ob-counter"><span id="desc-count">0</span>/500</div>
+        </div>
+
+        <div class="ob-chips">
+          <button class="ob-chip" data-desc="A modern portfolio website to showcase my work, projects, and skills.">Portfolio</button>
+          <button class="ob-chip" data-desc="A startup landing page with hero section, features, pricing, and call-to-action.">Startup</button>
+          <button class="ob-chip" data-desc="A clean blog with articles, categories, and an about page.">Blog</button>
+          <button class="ob-chip" data-desc="A professional agency website with services, case studies, and contact form.">Agency</button>
+          <button class="ob-chip" data-desc="An e-commerce storefront with product listings and checkout flow.">E-Commerce</button>
+        </div>
+
+        <div class="ob-actions">
+          <button class="ob-skip" id="btn-skip">Skip for now</button>
+          <button class="ob-btn ob-btn-primary" id="btn-continue">Continue →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>

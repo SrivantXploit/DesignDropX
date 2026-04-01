@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DesignDropX — Builder</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-init.js"></script>
@@ -24,6 +24,13 @@
           window.location.href = 'index.html';
         });
       }
+
+      // Display project name from onboarding
+      const savedName = localStorage.getItem('project_name');
+      const projectEl = document.querySelector('.nav-project');
+      if (savedName && projectEl) {
+        projectEl.textContent = savedName;
+      }
     });
   </script>
 </head>
@@ -41,6 +48,20 @@
     <div class="nav-right">
       <button id="btn-undo" class="nb" title="Undo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h13a4 4 0 0 1 0 8H7"/><path d="m3 10 4-4"/><path d="m3 10 4 4"/></svg></button>
       <button id="btn-redo" class="nb" title="Redo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H8a4 4 0 0 0 0 8h9"/><path d="m21 10-4-4"/><path d="m21 10-4 4"/></svg></button>
+      <div class="nav-sep"></div>
+      <!-- Device Switcher -->
+      <div class="device-switcher" id="device-switcher">
+        <button class="ds-btn active" data-device="desktop" title="Desktop">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+        </button>
+        <button class="ds-btn" data-device="tablet" title="Tablet">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        </button>
+        <button class="ds-btn" data-device="mobile" title="Mobile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        </button>
+      </div>
+      <span class="ds-label" id="ds-label">1280px</span>
       <div class="nav-sep"></div>
       <button id="btn-save" class="nb" title="Save Project"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
       <button id="btn-load" class="nb" title="Load Project"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Load</button>
@@ -103,6 +124,28 @@
     <aside class="props" id="properties-panel">
       <div class="sb-title">Properties</div>
       <div id="props-body" class="props-body"><p class="props-empty">Select an element to edit.</p></div>
+      <div class="sb-divider"></div>
+      <div class="sb-title">Canvas</div>
+      <div class="props-body" id="canvas-props">
+        <div class="prop-group">
+          <div class="prop-label">Background Color</div>
+          <div class="prop-row">
+            <input type="color" class="prop-color-input" id="canvas-bg-color" value="#ffffff">
+            <input class="prop-input" id="canvas-bg-hex" value="#ffffff" placeholder="#ffffff">
+          </div>
+        </div>
+        <div class="prop-group">
+          <div class="prop-label">Background Image</div>
+          <input class="prop-input" id="canvas-bg-img" type="text" placeholder="Paste image URL...">
+        </div>
+        <div class="prop-group">
+          <div class="prop-label">Grid Overlay</div>
+          <label class="toggle-label"><input type="checkbox" id="canvas-grid-toggle" checked> Show grid dots</label>
+        </div>
+        <div class="prop-group">
+          <button class="prop-input" id="canvas-bg-reset" style="cursor:pointer;text-align:center;background:rgba(239,68,68,0.08);color:#f87171;border-color:rgba(239,68,68,0.2);font-weight:600;">Reset Background</button>
+        </div>
+      </div>
     </aside>
   </div>
 
@@ -126,6 +169,6 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <script src="script.js"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>
