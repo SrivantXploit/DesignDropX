@@ -15,54 +15,33 @@ let activeElement = null;
 let history = [], historyIndex = -1, isRestoring = false;
 const emptyState = document.getElementById('empty-state');
 
+
 // Sign Out
 const logoutNode = document.getElementById('logoutBtn') || document.getElementById('btn-signout');
 if (logoutNode) {
   logoutNode.addEventListener('click', () => {
-    localStorage.removeItem('loggedIn');
-    window.location.href = 'login.html';
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = 'index.html';
   });
 }
 
 // ========== HISTORY ==========
 function createDefaultLayout() {
-  createElementOnCanvas('section', 40, 40);
-  const sec = canvas.lastElementChild;
-  sec.style.width = '800px'; sec.style.height = '360px'; sec.style.backgroundColor = '#f8fafc';
-  sec.style.border = '1px solid #e2e8f0';
-  sec.querySelector('.section-label').innerText = 'Starting Template';
-
-  createElementInParent('text', 40, 40, sec);
-  const hEl = sec.lastElementChild;
-  const h = hEl.querySelector('.text-content');
-  h.innerText = 'Build Your Website'; h.style.fontSize = '36px'; h.style.fontWeight = '700'; h.style.color = '#0f172a';
-  hEl.style.width = '400px'; hEl.style.height = '60px';
-
-  createElementInParent('text', 40, 110, sec);
-  const pEl = sec.lastElementChild;
-  const p = pEl.querySelector('.text-content');
-  p.innerText = 'Start with this layout or drag elements from the sidebar to customize your page structure and typography.'; p.style.fontSize = '16px'; p.style.color = '#475569';
-  pEl.style.width = '380px'; pEl.style.height = '60px';
-
-  createElementInParent('button', 40, 200, sec);
-  const bEl = sec.lastElementChild;
-  bEl.style.width = '160px'; bEl.style.height = '48px';
-  const btn = bEl.querySelector('button');
-  btn.innerText = 'Get Started'; btn.setAttribute('data-alert', 'Welcome!');
-
-  createElementInParent('image', 440, 40, sec);
-  const iEl = sec.lastElementChild;
-  iEl.style.width = '320px'; iEl.style.height = '280px';
-  const img = iEl.querySelector('img');
-  img.src = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80';
-  img.style.borderRadius = '8px'; img.style.objectFit = 'cover';
-
   selectElement(null);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   const s = localStorage.getItem('builderState');
-  if (s) { restoreState(s); history.push(s); historyIndex++; } else { createDefaultLayout(); saveState(); }
+  // Cache-Buster: Wipe legacy tutorial templates from local storage so the new 'drag drop done' placeholder renders immediately.
+  if (s && s.includes('Start building your website')) {
+    localStorage.removeItem('builderState');
+    createDefaultLayout(); saveState();
+  } else if (s) { 
+    restoreState(s); history.push(s); historyIndex++; 
+  } else { 
+    createDefaultLayout(); saveState(); 
+  }
 });
 function saveState() {
   if (isRestoring) return;
@@ -70,7 +49,7 @@ function saveState() {
   if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
   history.push(state); historyIndex++;
   localStorage.setItem('builderState', state);
-  updateLayers(); updateEmptyState();
+  updateLayers(); updateCanvasState();
 }
 function restoreState(s) {
   isRestoring = true;
@@ -94,7 +73,7 @@ function restoreState(s) {
     canvas.style.backgroundRepeat = '';
   }
   selectedElement = null; activeElement = null;
-  updateFloatingToolbar(); updatePropertiesPanel(); updateLayers(); updateEmptyState();
+  updateFloatingToolbar(); updatePropertiesPanel(); updateLayers(); updateCanvasState();
   isRestoring = false;
 }
 document.getElementById('btn-undo').addEventListener('click', () => { if (historyIndex > 0) { historyIndex--; restoreState(history[historyIndex]); } });
@@ -104,9 +83,16 @@ document.getElementById('btn-redo').addEventListener('click', () => { if (histor
 function showToast(m) { toast.textContent = m; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
 
 // ========== EMPTY STATE ==========
-function updateEmptyState() {
-  const hasElements = canvas.querySelectorAll('.element').length > 0;
-  if (emptyState) emptyState.classList.toggle('hidden', hasElements);
+function updateCanvasState() {
+  const canvas = document.getElementById("canvas");
+  const placeholder = document.getElementById("placeholder");
+  if (!canvas || !placeholder) return;
+  const elements = canvas.querySelectorAll(".canvas-element");
+  if (elements.length === 0) {
+    placeholder.style.display = "flex";
+  } else {
+    placeholder.style.display = "none";
+  }
 }
 
 // ========== LAYERS ==========
@@ -170,7 +156,7 @@ canvas.addEventListener('drop', e => {
 // ========== ELEMENT CREATION ==========
 function createElementOnCanvas(type, x, y) {
   const el = document.createElement(type === 'form' ? 'form' : 'div');
-  el.classList.add('element');
+  el.classList.add('element', 'canvas-element');
   el.style.left = `${x}px`; el.style.top = `${y}px`;
 
   if (type === 'text') {
@@ -179,6 +165,7 @@ function createElementOnCanvas(type, x, y) {
     el.appendChild(t);
   } else if (type === 'button') {
     const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!');
+    b.style.padding = '10px 20px';
     el.appendChild(b);
   } else if (type === 'image') {
     const img = document.createElement('img');
@@ -191,16 +178,20 @@ function createElementOnCanvas(type, x, y) {
     el.style.width = '300px'; el.style.height = '220px';
     el.style.display = 'flex'; el.style.flexDirection = 'column'; el.style.gap = '10px'; el.style.padding = '25px 15px 15px';
     const lbl = document.createElement('span'); lbl.className = 'form-label'; lbl.textContent = 'Form Engine'; el.appendChild(lbl);
-    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Enter email...'; inp.addEventListener('mousedown', e => e.stopPropagation()); el.appendChild(inp);
-    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Subscribe'; el.appendChild(sub);
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Enter email...'; inp.addEventListener('mousedown', e => e.stopPropagation()); 
+    inp.style.padding = '10px'; el.appendChild(inp);
+    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Subscribe'; 
+    sub.style.padding = '10px 20px'; el.appendChild(sub);
   } else if (type === 'section') {
     el.classList.add('el-section');
     el.style.width = '400px'; el.style.height = '200px';
+    el.style.padding = '40px 20px';
     const lbl = document.createElement('span'); lbl.className = 'section-label'; lbl.textContent = 'Section';
     el.appendChild(lbl);
   } else if (type === 'container') {
     el.classList.add('el-container');
     el.style.width = '240px'; el.style.height = '160px';
+    el.style.padding = '20px';
     const lbl = document.createElement('span'); lbl.className = 'container-label'; lbl.textContent = 'Container';
     el.appendChild(lbl);
   } else if (type === 'label') {
@@ -212,12 +203,14 @@ function createElementOnCanvas(type, x, y) {
     const inp = document.createElement('input'); 
     inp.type = 'text'; inp.placeholder = 'Enter value...'; 
     inp.addEventListener('mousedown', e => e.stopPropagation());
+    inp.style.padding = '10px';
     el.style.width = '200px'; el.style.height = '40px';
     el.appendChild(inp);
   } else if (type === 'textarea') {
     const ta = document.createElement('textarea'); 
     ta.placeholder = 'Type your message...'; 
     ta.addEventListener('mousedown', e => e.stopPropagation());
+    ta.style.padding = '10px';
     el.style.width = '200px'; el.style.height = '100px';
     el.appendChild(ta);
   }
@@ -229,13 +222,14 @@ function createElementOnCanvas(type, x, y) {
 // Create element inside a parent section/container
 function createElementInParent(type, x, y, parent) {
   const el = document.createElement(type === 'form' ? 'form' : 'div');
-  el.classList.add('element');
+  el.classList.add('element', 'canvas-element');
   el.style.left = `${x}px`; el.style.top = `${y}px`;
 
   if (type === 'text') {
     const t = document.createElement('div'); t.classList.add('text-content'); t.contentEditable = 'false'; t.innerText = 'Edit this text'; el.appendChild(t);
   } else if (type === 'button') {
-    const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!'); el.appendChild(b);
+    const b = document.createElement('button'); b.innerText = 'Click Me'; b.setAttribute('data-alert', 'Hello!'); 
+    b.style.padding = '10px 20px'; el.appendChild(b);
   } else if (type === 'image') {
     const img = document.createElement('img'); img.src = 'https://picsum.photos/200/150';
     el.style.width = '160px'; el.style.height = '120px'; el.appendChild(img);
@@ -245,16 +239,20 @@ function createElementInParent(type, x, y, parent) {
     el.style.width = '300px'; el.style.height = '220px';
     el.style.display = 'flex'; el.style.flexDirection = 'column'; el.style.gap = '10px'; el.style.padding = '25px 15px 15px';
     const lbl = document.createElement('span'); lbl.className = 'form-label'; lbl.textContent = 'Form Engine'; el.appendChild(lbl);
-    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Email...'; inp.addEventListener('mousedown', e => e.stopPropagation()); el.appendChild(inp);
-    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Submit'; el.appendChild(sub);
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Email...'; inp.addEventListener('mousedown', e => e.stopPropagation()); 
+    inp.style.padding = '10px'; el.appendChild(inp);
+    const sub = document.createElement('input'); sub.type = 'submit'; sub.value = 'Submit'; 
+    sub.style.padding = '10px 20px'; el.appendChild(sub);
   } else if (type === 'container') {
     el.classList.add('el-container');
     el.style.width = '240px'; el.style.height = '160px';
+    el.style.padding = '20px';
     const lbl = document.createElement('span'); lbl.className = 'container-label'; lbl.textContent = 'Container';
     el.appendChild(lbl);
   } else if (type === 'section') {
     el.classList.add('el-section');
     el.style.width = '300px'; el.style.height = '200px';
+    el.style.padding = '40px 20px';
     const lbl = document.createElement('span'); lbl.className = 'section-label'; lbl.textContent = 'Section';
     el.appendChild(lbl);
   } else if (type === 'label') {
@@ -266,12 +264,14 @@ function createElementInParent(type, x, y, parent) {
     const inp = document.createElement('input'); 
     inp.type = 'text'; inp.placeholder = 'Enter value...'; 
     inp.addEventListener('mousedown', e => e.stopPropagation());
+    inp.style.padding = '10px';
     el.style.width = '180px'; el.style.height = '40px';
     el.appendChild(inp);
   } else if (type === 'textarea') {
     const ta = document.createElement('textarea'); 
     ta.placeholder = 'Type your message...'; 
     ta.addEventListener('mousedown', e => e.stopPropagation());
+    ta.style.padding = '10px';
     el.style.width = '180px'; el.style.height = '80px';
     el.appendChild(ta);
   }
@@ -362,6 +362,11 @@ document.addEventListener('mousemove', e => {
     if (activeElement.offsetTop + h > cr.height) h = Math.floor((cr.height - activeElement.offsetTop) / SNAP) * SNAP;
     activeElement.style.width = `${w}px`; activeElement.style.height = `${h}px`;
   } else {
+    // If it is in a flex/grid container, lock its relative positioning to strictly adhere to box-mode alignment rules.
+    const pDisp = activeElement.parentElement ? getComputedStyle(activeElement.parentElement).display : '';
+    const inlineDisp = activeElement.parentElement ? activeElement.parentElement.style.display : '';
+    if (inlineDisp === 'flex' || inlineDisp === 'grid' || pDisp === 'flex' || pDisp === 'grid') return;
+
     let l = Math.round((initialLeft + dx) / SNAP) * SNAP, t = Math.round((initialTop + dy) / SNAP) * SNAP;
     const er = activeElement.getBoundingClientRect();
     if (l < 0) l = 0; if (t < 0) t = 0;
@@ -438,22 +443,28 @@ function updatePropertiesPanel() {
     }
     h += `</div>`;
 
-    h += `<div class="prop-group"><div class="prop-label">Padding & Margin</div>
-            <div class="prop-row" style="margin-bottom:8px">
-              <input class="prop-input" id="p-ptop" type="text" placeholder="P-Top" value="${selectedElement.style.paddingTop || cs.paddingTop}">
-              <input class="prop-input" id="p-prgt" type="text" placeholder="P-Right" value="${selectedElement.style.paddingRight || cs.paddingRight}">
+    h += `<div class="prop-group">
+            <div class="prop-label" style="color:#60a5fa;display:flex;align-items:center;gap:5px">
+              <div style="width:8px;height:8px;background:#60a5fa;border-radius:2px"></div> PADDING
             </div>
             <div class="prop-row" style="margin-bottom:8px">
-              <input class="prop-input" id="p-pbot" type="text" placeholder="P-Bot" value="${selectedElement.style.paddingBottom || cs.paddingBottom}">
-              <input class="prop-input" id="p-plft" type="text" placeholder="P-Left" value="${selectedElement.style.paddingLeft || cs.paddingLeft}">
+              <input class="prop-input" id="p-ptop" type="text" placeholder="Top" value="${selectedElement.style.paddingTop || cs.paddingTop}">
+              <input class="prop-input" id="p-prgt" type="text" placeholder="Right" value="${selectedElement.style.paddingRight || cs.paddingRight}">
+            </div>
+            <div class="prop-row" style="margin-bottom:16px">
+              <input class="prop-input" id="p-pbot" type="text" placeholder="Bottom" value="${selectedElement.style.paddingBottom || cs.paddingBottom}">
+              <input class="prop-input" id="p-plft" type="text" placeholder="Left" value="${selectedElement.style.paddingLeft || cs.paddingLeft}">
+            </div>
+            <div class="prop-label" style="color:#fb923c;display:flex;align-items:center;gap:5px">
+              <div style="width:8px;height:8px;background:#fb923c;border-radius:2px"></div> MARGIN
             </div>
             <div class="prop-row" style="margin-bottom:8px">
-              <input class="prop-input" id="p-mtop" type="text" placeholder="M-Top" value="${selectedElement.style.marginTop || cs.marginTop}">
-              <input class="prop-input" id="p-mrgt" type="text" placeholder="M-Right" value="${selectedElement.style.marginRight || cs.marginRight}">
+              <input class="prop-input" id="p-mtop" type="text" placeholder="Top" value="${selectedElement.style.marginTop || cs.marginTop}">
+              <input class="prop-input" id="p-mrgt" type="text" placeholder="Right" value="${selectedElement.style.marginRight || cs.marginRight}">
             </div>
             <div class="prop-row">
-              <input class="prop-input" id="p-mbot" type="text" placeholder="M-Bot" value="${selectedElement.style.marginBottom || cs.marginBottom}">
-              <input class="prop-input" id="p-mlft" type="text" placeholder="M-Left" value="${selectedElement.style.marginLeft || cs.marginLeft}">
+              <input class="prop-input" id="p-mbot" type="text" placeholder="Bottom" value="${selectedElement.style.marginBottom || cs.marginBottom}">
+              <input class="prop-input" id="p-mlft" type="text" placeholder="Left" value="${selectedElement.style.marginLeft || cs.marginLeft}">
             </div>
           </div>`;
 
@@ -581,9 +592,9 @@ function rgbHex(rgb) { if (rgb.startsWith('#')) return rgb; const m = rgb.match(
 
 // ========== MAIN ACTIONS ==========
 function resetCanvas() {
-  // 1. Remove any child from canvas that isn't part of the core structure (root-container or empty-state)
+  // 1. Remove any child from canvas that isn't part of the core structure
   [...canvas.children].forEach(child => {
-    if (child.id !== 'root-container' && child.id !== 'empty-state' && child.id !== 'floating-toolbar') {
+    if (child.id !== 'root-container' && child.id !== 'floating-toolbar') {
       child.remove();
     }
   });
@@ -613,7 +624,7 @@ function resetCanvas() {
   updateFloatingToolbar();
   updatePropertiesPanel();
   updateLayers();
-  updateEmptyState();
+  updateCanvasState();
 
   // 6. Save State for undo/redo
   saveState();
@@ -626,36 +637,64 @@ document.getElementById('btn-preview').addEventListener('click', () => { documen
 document.getElementById('exit-preview').addEventListener('click', () => { document.body.classList.remove('preview-mode'); document.getElementById('exit-preview').style.display = 'none'; });
 
 // ========== EXPORT ==========
-function genExportHTML() {
-  const c = canvas.cloneNode(true);
-  c.querySelectorAll('.resize-handle').forEach(h => h.remove());
-  const empty = c.querySelector('#empty-state');
-  if (empty) empty.remove();
-  const ftbar = c.querySelector('#floating-toolbar');
+function exportCleanHTML() {
+  const canvas = document.getElementById("canvas").cloneNode(true);
+  
+  const placeholder = canvas.querySelector("#placeholder");
+  if (placeholder) placeholder.remove();
+  
+  canvas.querySelectorAll(".selected, .dragging").forEach(el => {
+    el.classList.remove("selected", "dragging");
+  });
+
+  canvas.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  const ftbar = canvas.querySelector('#floating-toolbar');
   if (ftbar) ftbar.remove();
 
-  const elements = c.querySelectorAll('.element');
-  if (elements.length === 0 && !c.style.backgroundImage) {
+  const elements = canvas.querySelectorAll('.canvas-element');
+  if (elements.length === 0 && !canvas.style.backgroundImage) {
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Empty Site</title></head><body style="margin:0;padding:0;background:#fff;"></body></html>`;
   }
 
-  c.querySelectorAll('.element').forEach(el => {
-    el.removeAttribute('draggable'); el.style.cursor = 'default'; el.classList.remove('selected');
+  canvas.querySelectorAll('.canvas-element').forEach(el => {
+    el.removeAttribute('draggable'); el.style.cursor = 'default';
     const t = el.querySelector('.text-content'); if (t) { t.removeAttribute('contenteditable'); t.classList.remove('editing'); t.style.cursor = 'inherit'; }
     const sl = el.querySelector('.section-label,.container-label'); if (sl) sl.remove();
     if (el.classList.contains('el-section') || el.classList.contains('el-container')) { el.style.border = 'none'; el.style.background = 'transparent'; }
+    
+    // Re-enable interactivity disabled during editor mode
+    const interactables = el.querySelectorAll('button, input, textarea');
+    interactables.forEach(i => i.style.pointerEvents = 'auto');
+    
+    // Wire Forms to native mailto: since third-party APIs block local blob: Origins
+    if (el.tagName === 'FORM') {
+      const inputs = el.querySelectorAll('input, textarea');
+      inputs.forEach((inp, idx) => {
+        if (!inp.name) inp.name = inp.placeholder || inp.type || ('field_' + idx);
+      });
+      el.removeAttribute('action');
+      el.removeAttribute('method');
+    }
   });
-  const css = `body{font-family:'Inter',sans-serif;margin:0;padding:0;background:#f0f2f5}.canvas{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#fff;}.element{position:absolute;border-radius:4px;box-sizing:border-box}.element button{padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:1rem;font-weight:500;width:100%;height:100%;cursor:pointer}.element img{width:100%;height:100%;object-fit:contain;display:block}.element .text-content,.element div{padding:4px;font-size:1rem;line-height:1.5;width:100%;height:100%;word-wrap:break-word}.element form{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;background:#fff;padding:15px;border-radius:8px;border:1px solid #e5e7eb}.element input, .element textarea{padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;width:100%;height:100%;font-family:inherit;font-size:.95rem;box-sizing:border-box}`;
+  const css = `body{font-family:'Inter',sans-serif;margin:0;padding:0;background:#f0f2f5}.canvas{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#fff;}.canvas-element{position:absolute;border-radius:4px;box-sizing:border-box}.canvas-element button{padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:1rem;font-weight:500;width:100%;height:100%;cursor:pointer}.canvas-element img{width:100%;height:100%;object-fit:contain;display:block}.canvas-element .text-content,.canvas-element div{padding:4px;font-size:1rem;line-height:1.5;width:100%;height:100%;word-wrap:break-word}.canvas-element form{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;background:#fff;padding:15px;border-radius:8px;border:1px solid #e5e7eb}.canvas-element input, .canvas-element textarea{padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;width:100%;height:100%;font-family:inherit;font-size:.95rem;box-sizing:border-box}`;
   const sc = `<script>
       document.querySelectorAll('button[data-alert]').forEach(b=>b.addEventListener('click',()=>alert(b.getAttribute('data-alert'))));
-      document.querySelectorAll('.el-form').forEach(f=>f.addEventListener('submit',e=>{e.preventDefault();alert('Form Submitted Successfully! ✅');}));
+      document.querySelectorAll('.el-form').forEach(f=>f.addEventListener('submit',e=>{
+        e.preventDefault();
+        let bodyText = "New submission:\\n\\n";
+        f.querySelectorAll('input:not([type="hidden"]), textarea').forEach(inp => {
+          bodyText += (inp.name || "Field") + ": " + inp.value + "\\n";
+        });
+        alert('Opening your email client to send this subscription to the site owner!');
+        window.location.href = 'mailto:mandarapusrivant@gmail.com?subject=New Website Subscription&body=' + encodeURIComponent(bodyText);
+      }));
     <\/script>`;
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Deployed Site</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>${css}</style></head><body>${c.outerHTML}${sc}</body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Deployed Site</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>${css}</style></head><body>${canvas.outerHTML}${sc}</body></html>`;
 }
-function genExport() { return new Blob([genExportHTML()], {type:'text/html'}); }
+function genExport() { return new Blob([exportCleanHTML()], {type:'text/html'}); }
 document.getElementById('btn-download').addEventListener('click', () => {
   if (selectedElement) selectElement(null);
-  const a = document.createElement('a'); a.href = URL.createObjectURL(genExport()); a.download = 'my-website.html'; a.click(); URL.revokeObjectURL(a.href);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(genExport()); a.download = 'index.html'; a.click(); URL.revokeObjectURL(a.href);
   showToast('Exported successfully! 📦');
 });
 function showDeployModal() {
@@ -704,7 +743,7 @@ function showDeployModal() {
 
     document.getElementById('btn-close-deploy').addEventListener('click', () => {
       modal.classList.remove('open');
-      const html = genExportHTML();
+      const html = exportCleanHTML();
       // Use window.open() to create a new tab
       const newWin = window.open('', '_blank');
       if (newWin) {
@@ -735,6 +774,75 @@ document.getElementById('btn-deploy').addEventListener('click', () => {
   if (selectedElement) selectElement(null);
   showDeployModal();
 });
+
+// ========== SUPABASE PROJECT PERSISTENCE ==========
+const btnSave = document.getElementById('btn-save');
+const btnLoad = document.getElementById('btn-load');
+
+if (btnSave) {
+  btnSave.addEventListener('click', async () => {
+    if (selectedElement) selectElement(null);
+    showToast('Saving to Supabase...');
+    try {
+      const clone = canvas.cloneNode(true);
+      const p = clone.querySelector('#placeholder');
+      if (p) p.remove();
+      clone.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+      
+      const payload = JSON.stringify({ html: clone.innerHTML, bg: canvas.style.backgroundImage || '' });
+      const { error } = await supabaseClient.from('projects').insert([{ content: payload }]);
+      if (error) throw error;
+      showToast('Project saved successfully! 💾');
+    } catch(err) {
+      console.error('Save error:', err);
+      showToast('Error saving project!');
+    }
+  });
+}
+
+if (btnLoad) {
+  btnLoad.addEventListener('click', async () => {
+    showToast('Loading from Supabase...');
+    try {
+      const { data, error } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false }).limit(1);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const pBack = canvas.querySelector('#placeholder');
+        const s = data[0].content;
+        let html = s, bg = '';
+        try {
+          const parsed = JSON.parse(s);
+          if (parsed && typeof parsed === 'object' && parsed.html !== undefined) { 
+            html = parsed.html; bg = parsed.bg || ''; 
+          }
+        } catch(e) {}
+        
+        canvas.innerHTML = html;
+        if (pBack && !canvas.querySelector('#placeholder')) {
+           canvas.appendChild(pBack);
+        }
+        canvas.style.backgroundImage = bg;
+        if (bg) {
+          canvas.style.backgroundSize = 'cover';
+          canvas.style.backgroundPosition = 'center';
+          canvas.style.backgroundRepeat = 'no-repeat';
+        } else {
+          canvas.style.backgroundSize = '';
+          canvas.style.backgroundPosition = '';
+          canvas.style.backgroundRepeat = '';
+        }
+        selectedElement = null; activeElement = null;
+        updateFloatingToolbar(); updatePropertiesPanel(); updateLayers(); updateCanvasState(); saveState();
+        showToast('Project loaded! ☁️');
+      } else {
+        showToast('No saved projects found.');
+      }
+    } catch(err) {
+      console.error('Load error:', err);
+      showToast('Error loading project!');
+    }
+  });
+}
 
 // ========== PARTICLES + IDLE ==========
 (function() {

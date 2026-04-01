@@ -97,51 +97,31 @@ body{
 
 /* =========== CANVAS =========== */
 .canvas-wrap{
-  flex:1;padding:20px;overflow:auto;position:relative;z-index:2;
-  background:#111114;
-  background-image:radial-gradient(circle,rgba(108,99,255,.03) 1px,transparent 1px);
-  background-size:20px 20px;
+  flex:1;padding:40px;overflow:auto;position:relative;z-index:2;
+  background:#f4f4f5;
 }
 .canvas{
   width:100%;min-height:100%;position:relative;
-  background:#fefefe;border-radius:10px;overflow:hidden;
-  box-shadow:0 0 0 1px rgba(108,99,255,.04),0 8px 50px rgba(0,0,0,.5);
+  background:#ffffff;border-radius:12px;overflow:hidden;
+  box-shadow:0 10px 40px rgba(0,0,0,.04),0 0 0 1px rgba(0,0,0,.02);
   transition:box-shadow .3s;
 }
 .canvas.drag-over{box-shadow:0 0 0 2px rgba(108,99,255,.5),0 0 30px rgba(108,99,255,.08),0 8px 50px rgba(0,0,0,.5)}
 
-/* Empty state */
-.empty-state{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:10px;
-  pointer-events:none;user-select:none;
-  animation:fadeIn .5s ease;
+/* Professional Drag/Drop Placeholder */
+#placeholder{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:400px;background:rgba(255,255,255,0.6);border:2px dashed #e4e4e7;
+  border-radius:12px;padding:40px;text-align:center;
+  pointer-events:none;z-index:1;display:flex;flex-direction:column;align-items:center;
+  transition:all 0.3s ease;
 }
-.empty-state.hidden{display:none}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.empty-icon{margin-bottom:4px;opacity:.4}
-.empty-state h3{font-size:1.1rem;font-weight:600;color:#888;letter-spacing:-.3px}
-.empty-state p{font-size:.8rem;color:#aaa;max-width:260px;text-align:center;line-height:1.5}
-.empty-tpl-btn{
-  pointer-events:auto;margin-top:6px;padding:8px 18px;
-  background:linear-gradient(135deg,#6c63ff,#4f46e5);color:#fff;
-  border:none;border-radius:9px;font-family:'Inter',sans-serif;
-  font-size:.78rem;font-weight:600;cursor:pointer;
-  box-shadow:0 0 16px rgba(108,99,255,.2);transition:all .2s;
-}
-.empty-tpl-btn:hover{box-shadow:0 0 24px rgba(108,99,255,.35);transform:translateY(-1px)}
-.empty-tpl-btn:active{transform:translateY(0) scale(.97)}
-
-/* Root container */
+.ph-title{font-size:1.15rem;font-weight:600;color:#3f3f46;margin-bottom:8px;letter-spacing:-0.2px;}
+.ph-desc{font-size:0.9rem;font-weight:400;color:#71717a;line-height:1.5;}
 .root-container{
   position:relative;width:100%;min-height:100%;
   background:#fff;border-radius:10px;
   transition:background .2s;
-}
-.root-label{
-  position:absolute;top:6px;left:10px;font-size:.55rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:1.5px;color:rgba(0,0,0,.12);
-  pointer-events:none;z-index:1;
 }
 .root-container.selected{outline:2px solid rgba(108,99,255,.4);outline-offset:-2px}
 .root-container>.element{position:absolute}
@@ -187,10 +167,11 @@ body.preview-mode .root-container{outline:none!important}
 .ftbar button:hover{background:rgba(108,99,255,.1);box-shadow:0 0 8px rgba(108,99,255,.1)}
 
 /* =========== CANVAS ELEMENTS =========== */
-.element{position:absolute;cursor:grab;user-select:none;border-radius:4px;transition:background-color .15s}
+.element{position:absolute;cursor:grab;user-select:none;border-radius:4px;transition:all .15s}
 .element>*{pointer-events:auto}
+.element:hover{outline:1px solid rgba(108,99,255,.4);outline-offset:-1px}
 .element:active{cursor:grabbing}
-.element.selected{outline:2px solid rgba(108,99,255,.7);outline-offset:2px;z-index:100;box-shadow:0 0 12px rgba(108,99,255,.1)}
+.element.selected{outline:2px solid #6c63ff;outline-offset:-2px;z-index:100;box-shadow:0 0 0 4px rgba(108,99,255,.15)}
 
 .resize-handle{
   position:absolute;bottom:-5px;right:-5px;width:10px;height:10px;

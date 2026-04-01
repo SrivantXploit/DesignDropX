@@ -279,12 +279,16 @@
   <button id="scroll-top" class="scroll-top" aria-label="Scroll to top">↑</button>
 
   <!-- ===== SCRIPTS ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-init.js"></script>
   <script>
     // Scroll Reveal
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
+        } else {
+          entry.target.classList.remove('visible');
         }
       });
     }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });

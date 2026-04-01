@@ -61,6 +61,8 @@
       <p class="hint">Create an account or login to continue.</p>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-init.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       console.log("JS Loaded");
@@ -80,22 +82,34 @@
         console.log("Login clicked");
         const email = emailInput.value;
         const password = passwordInput.value;
+        const msg = document.getElementById("auth-msg");
         
-        if (email === "admin" && password === "1234") {
+        if (email === "mandarapusrivant@gmail.com" && password === "chintu30") {
           localStorage.setItem("loggedIn", "true");
-          alert("Login success");
           window.location.href = 'builder.html';
         } else {
-          alert("Invalid credentials");
+          msg.style.display = "block";
+          msg.style.color = "#ef4444";
+          msg.innerText = "Invalid credentials";
         }
       }
 
       function unhandled() {
-        alert("Local dev mode: Use Admin username/password to login");
+        const msg = document.getElementById("auth-msg");
+        msg.style.display = "block";
+        msg.style.color = "#a1a1aa";
+        msg.innerText = "Local dev mode: Use your email/password to login";
+      }
+
+      function signup() {
+        const msg = document.getElementById("auth-msg");
+        msg.style.display = "block";
+        msg.style.color = "#10b981";
+        msg.innerText = "Sign up successful! You can now log in.";
       }
 
       loginBtn.addEventListener("click", login);
-      signupBtn.addEventListener("click", unhandled);
+      signupBtn.addEventListener("click", signup);
       googleBtn.addEventListener("click", unhandled);
       githubBtn.addEventListener("click", unhandled);
     });
