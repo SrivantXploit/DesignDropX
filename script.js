@@ -19,7 +19,8 @@ const emptyState = document.getElementById('empty-state');
 // Sign Out
 const logoutNode = document.getElementById('logoutBtn') || document.getElementById('btn-signout');
 if (logoutNode) {
-  logoutNode.addEventListener('click', () => {
+  logoutNode.addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'index.html';

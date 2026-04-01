@@ -64,12 +64,21 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-init.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       console.log("JS Loaded");
 
-      if (localStorage.getItem("loggedIn") === "true") {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      console.log("Session:", session);
+      if (session) {
         window.location.href = 'builder.html';
       }
+
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+          console.log("Session:", session);
+          window.location.href = 'builder.html';
+        }
+      });
 
       const emailInput = document.getElementById("emailInput");
       const passwordInput = document.getElementById("passwordInput");
@@ -78,40 +87,102 @@
       const googleBtn = document.getElementById("googleBtn");
       const githubBtn = document.getElementById("githubBtn");
 
-      function login() {
-        console.log("Login clicked");
-        const email = emailInput.value;
+      async function login() {
+        const email = emailInput.value.trim();
         const password = passwordInput.value;
         const msg = document.getElementById("auth-msg");
         
-        if (email === "mandarapusrivant@gmail.com" && password === "chintu30") {
-          localStorage.setItem("loggedIn", "true");
-          window.location.href = 'builder.html';
-        } else {
+        if (!email || !password) {
           msg.style.display = "block";
           msg.style.color = "#ef4444";
-          msg.innerText = "Invalid credentials";
+          msg.innerText = "Please enter email and password";
+          return;
+        }
+        
+        loginBtn.innerHTML = '<span class="btn-loader" style="display:block;"></span>';
+        loginBtn.style.pointerEvents = 'none';
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+
+        if (error) {
+          msg.style.display = "block";
+          msg.style.color = "#ef4444";
+          msg.innerText = error.message;
+          loginBtn.innerHTML = '<span class="btn-text">Log In</span>';
+          loginBtn.style.pointerEvents = 'auto';
+        } else {
+          window.location.href = 'builder.html';
         }
       }
 
-      function unhandled() {
+      async function loginWithGoogle() {
         const msg = document.getElementById("auth-msg");
-        msg.style.display = "block";
-        msg.style.color = "#a1a1aa";
-        msg.innerText = "Local dev mode: Use your email/password to login";
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'google'
+        });
+        if (error) {
+          msg.style.display = "block";
+          msg.style.color = "#ef4444";
+          msg.innerText = error.message;
+        }
       }
 
-      function signup() {
+      async function loginWithGithub() {
         const msg = document.getElementById("auth-msg");
-        msg.style.display = "block";
-        msg.style.color = "#10b981";
-        msg.innerText = "Sign up successful! You can now log in.";
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'github'
+        });
+        if (error) {
+          msg.style.display = "block";
+          msg.style.color = "#ef4444";
+          msg.innerText = error.message;
+        }
+      }
+
+      async function signup() {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const msg = document.getElementById("auth-msg");
+
+        if (!email || !password) {
+          msg.style.display = "block";
+          msg.style.color = "#ef4444";
+          msg.innerText = "Please enter email and password";
+          return;
+        }
+        
+        signupBtn.innerHTML = '<span class="btn-loader" style="display:block;"></span>';
+        signupBtn.style.pointerEvents = 'none';
+
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: email,
+          password: password,
+        });
+
+        if (error) {
+          msg.style.display = "block";
+          msg.style.color = "#ef4444";
+          msg.innerText = error.message;
+        } else {
+          msg.style.display = "block";
+          msg.style.color = "#10b981";
+          msg.innerText = "Sign up successful! You can now log in.";
+          if (data.session) {
+             window.location.href = 'builder.html';
+             return;
+          }
+        }
+        signupBtn.innerHTML = '<span class="btn-text">Sign Up</span>';
+        signupBtn.style.pointerEvents = 'auto';
       }
 
       loginBtn.addEventListener("click", login);
       signupBtn.addEventListener("click", signup);
-      googleBtn.addEventListener("click", unhandled);
-      githubBtn.addEventListener("click", unhandled);
+      googleBtn.addEventListener("click", loginWithGoogle);
+      githubBtn.addEventListener("click", loginWithGithub);
     });
   </script>
 </body>

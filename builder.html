@@ -9,14 +9,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-init.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem("loggedIn") !== "true") {
+    document.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
         window.location.href = 'login.html';
       }
 
       const logoutBtn = document.getElementById('logoutBtn');
       if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
+          await supabaseClient.auth.signOut();
           localStorage.clear();
           sessionStorage.clear();
           window.location.href = 'index.html';
